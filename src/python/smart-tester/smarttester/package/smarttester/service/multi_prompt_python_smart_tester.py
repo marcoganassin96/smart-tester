@@ -6,6 +6,7 @@ import openai  # used for calling the OpenAI API
 # example of a function that uses a multi-step prompt to write unit tests
 
 from smarttester.utils.messages_printer import print_messages, print_message_delta
+from smarttester.utils.text_utils import _get_bullets_number
 
 
 def explain_tests_from_function(
@@ -247,7 +248,7 @@ def unit_tests_from_function(
     # Step 2b: If the plan is short, ask GPT to elaborate further
     # this counts top-level bullets (e.g., categories), but not sub-bullets (e.g., test cases)
 
-    num_bullets = max(plan.count("\n-"), plan.count("\n*"))
+    num_bullets = _get_bullets_number(plan)
     elaboration_needed = num_bullets < approx_min_cases_to_cover
 
     elaboration_user_message, elaboration_assistant_message = None, None
