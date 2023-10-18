@@ -20,8 +20,37 @@ if __name__ == "__main__":
         return ' '.join(translated_words)
     """
 
+    get_bullets_number_function = """
+    def _get_bullets_number(text: str) -> int:
+        bullet_characters = ["-", "•", "*"]
+    
+        lines = text.splitlines()
+        bullets = []
+        # get first matching bullet character
+        for line in lines:
+            bullet_character = next((c for c in bullet_characters if c in line), None)
+            if bullet_character:
+                bullet_line = line.split(bullet_character)[0]
+                # if doesn't contain characters like letters or numbers
+                if not re.search(r'[a-zA-Z0-9]', bullet_line):
+                    bullets.append(bullet_line)
+                    
+        if len(bullets) == 0:
+            return 0
+    
+        # group bullets by format
+        _grouped_bullets: dict[str, int] = {}
+        for bullet in bullets:
+            if bullet not in _grouped_bullets:
+                _grouped_bullets[bullet] = 0
+            _grouped_bullets[bullet] += 1
+    
+        # count bullets number as the most frequent format
+        bullets_number = max(_grouped_bullets.values())
+    """
+
     unit_tests = unit_tests_from_function(
-        example_function,
+        get_bullets_number_function,
         approx_min_cases_to_cover=10,
         print_text=True
     )
