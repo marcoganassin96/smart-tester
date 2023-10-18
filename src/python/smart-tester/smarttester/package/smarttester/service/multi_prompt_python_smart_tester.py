@@ -240,91 +240,107 @@ def unit_tests_from_function(
         execute_model: str = "gpt-3.5-turbo",  # model used to generate code in step 3
         temperature: float = 0.4,  # temperature = 0 can sometimes get stuck in repetitive loops, so we use 0.4
         reruns_if_fail: int = 1,  # if the output code cannot be parsed, this will re-run the function up to N times
+        continue_from_step: int = 0, # restarts the process from a given step; options are 0: "start", 1: "explain", 2: "plan", 3: "plan_more", 4: "execute", 5: "code"
 ) -> str:
     """Returns a unit test for a given Python function, using a 3-step GPT prompt."""
 
-    if save_text:
-        function_name = function_to_test.split("def ")[1].split("(")[0]
-        if " " in function_name:
-            function_name = function_name.split(" ")[0]
-        if function_name is None or len(function_name) < 1:
-            function_name = "unknown_function"
-        save_dir = f"{int(time.time() * 1000)}-{function_name}"
-        try:
-            file_path = PATH_saved_files / save_dir
-            os.mkdir(file_path)
-        except OSError:
-            raise Exception(f"{file_path} already exists. Check for errors, delete it and try again.")
-        save_text_in_saved_files_dir("function", save_dir, function_to_test)
+    if continue_from_step < 0:
+        raise Exception("continue_from_step must be >= 0")
 
-    # Step 1: Generate an explanation of the function
-    explain_response = explain_tests_from_function(function_to_test, print_text, explain_model, temperature)
-    explanation, explain_system_message, explain_user_message, explain_assistant_message = explain_response
+    if continue_from_step > 6:
+        raise Exception("continue_from_step must be <= 6")
 
-    if save_text:
-        save_text_in_saved_files_dir("explain", save_dir, explanation)
+    if continue_from_step == 0:
+        # Step 0: Start and optionally save function to test
+        if save_text:
+            function_name = function_to_test.split("def ")[1].split("(")[0]
+            if " " in function_name:
+                function_name = function_name.split(" ")[0]
+            if function_name is None or len(function_name) < 1:
+                function_name = "unknown_function"
+            save_dir = f"{int(time.time() * 1000)}-{function_name}"
+            try:
+                file_path = PATH_saved_files / save_dir
+                os.mkdir(file_path)
+            except OSError:
+                raise Exception(f"{file_path} already exists. Check for errors, delete it and try again.")
+            save_text_in_saved_files_dir("function", save_dir, function_to_test)
 
-    # Step 2: Generate a plan to write a unit test
-    plan_response = plan_tests_from_explain(explain_system_message, explain_user_message, explain_assistant_message,
-                                            unit_test_package, print_text, plan_model, temperature)
-    plan, plan_user_message, plan_assistant_message = plan_response
-
-    if save_text:
-        save_text_in_saved_files_dir("plan", save_dir, plan)
-
-    # Step 2b: If the plan is short, ask GPT to elaborate further
-    # this counts top-level bullets (e.g., categories), but not sub-bullets (e.g., test cases)
-
-    num_bullets = _get_bullets_number(plan)
-    elaboration_needed = num_bullets < approx_min_cases_to_cover
-
-    elaboration_user_message, elaboration_assistant_message = None, None
-    if elaboration_needed:
-        elaboration_response = increase_plan_tests(explain_system_message, explain_user_message,
-                                                   explain_assistant_message, plan_user_message, plan_assistant_message,
-                                                   print_text, plan_model, temperature)
-
-        elaboration, elaboration_user_message, elaboration_assistant_message = elaboration_response
+    if continue_from_step <= 1:
+        # Step 1: Generate an explanation of the function
+        explain_response = explain_tests_from_function(function_to_test, print_text, explain_model, temperature)
+        explanation, explain_system_message, explain_user_message, explain_assistant_message = explain_response
 
         if save_text:
-            save_text_in_saved_files_dir("elaboration", save_dir, elaboration)
+            save_text_in_saved_files_dir("explain", save_dir, explanation)
 
-    # Step 3: Generate the unit test
-    execution_response = generate_tests_form_plan(explain_user_message, explain_assistant_message, plan_user_message,
-                                                  plan_assistant_message, function_to_test, elaboration_needed,
-                                                  elaboration_user_message,
-                                                  elaboration_assistant_message, unit_test_package, print_text,
-                                                  execute_model, temperature)
+    if continue_from_step <= 2:
+        # Step 2: Generate a plan to write a unit test
+        plan_response = plan_tests_from_explain(explain_system_message, explain_user_message, explain_assistant_message,
+                                                unit_test_package, print_text, plan_model, temperature)
+        plan, plan_user_message, plan_assistant_message = plan_response
 
-    execution = execution_response
+        if save_text:
+            save_text_in_saved_files_dir("plan", save_dir, plan)
 
-    if save_text:
-        save_text_in_saved_files_dir("execution", save_dir, execution)
+    if continue_from_step <= 3:
+        # Step 2b: If the plan is short, ask GPT to elaborate further
+        # this counts top-level bullets (e.g., categories), but not sub-bullets (e.g., test cases)
 
-    # Custom post-processing to fix errors
-    code = post_process_execution_response(execution_response)
+        num_bullets = _get_bullets_number(plan)
+        elaboration_needed = num_bullets < approx_min_cases_to_cover
 
-    if save_text:
-        save_text_in_saved_files_dir("code", save_dir, code, "py")
+        elaboration_user_message, elaboration_assistant_message = None, None
+        if elaboration_needed:
+            elaboration_response = increase_plan_tests(explain_system_message, explain_user_message,
+                                                       explain_assistant_message, plan_user_message, plan_assistant_message,
+                                                       print_text, plan_model, temperature)
 
-    # retry if fails
-    try:
-        ast.parse(code)
-    except SyntaxError as e:
-        print(f"Syntax error in generated code: {e}")
-        if reruns_if_fail > 0:
-            print("Rerunning...")
-            return unit_tests_from_function(
-                function_to_test=function_to_test,
-                unit_test_package=unit_test_package,
-                approx_min_cases_to_cover=approx_min_cases_to_cover,
-                print_text=print_text,
-                explain_model=explain_model,
-                plan_model=plan_model,
-                execute_model=execute_model,
-                temperature=temperature,
-                reruns_if_fail=reruns_if_fail - 1,  # decrement rerun counter when calling again
-            )
+            elaboration, elaboration_user_message, elaboration_assistant_message = elaboration_response
+
+            if save_text:
+                save_text_in_saved_files_dir("elaboration", save_dir, elaboration)
+
+    if continue_from_step <= 4:
+        # Step 3: Generate the unit test
+        execution_response = generate_tests_form_plan(explain_user_message, explain_assistant_message, plan_user_message,
+                                                      plan_assistant_message, function_to_test, elaboration_needed,
+                                                      elaboration_user_message,
+                                                      elaboration_assistant_message, unit_test_package, print_text,
+                                                      execute_model, temperature)
+
+        execution = execution_response
+
+        if save_text:
+            save_text_in_saved_files_dir("execution", save_dir, execution)
+
+    if continue_from_step <= 5:
+        # Custom post-processing to fix errors
+        code = post_process_execution_response(execution_response)
+
+        if save_text:
+            save_text_in_saved_files_dir("code", save_dir, code, "py")
+
+    if continue_from_step <= 6:
+        # retry if fails
+        try:
+            ast.parse(code)
+        except SyntaxError as e:
+            print(f"Syntax error in generated code: {e}")
+            if reruns_if_fail > 0:
+                print("Rerunning...")
+                return unit_tests_from_function(
+                    function_to_test=function_to_test,
+                    unit_test_package=unit_test_package,
+                    approx_min_cases_to_cover=approx_min_cases_to_cover,
+                    print_text=print_text,
+                    explain_model=explain_model,
+                    plan_model=plan_model,
+                    execute_model=execute_model,
+                    temperature=temperature,
+                    reruns_if_fail=reruns_if_fail - 1,  # decrement rerun counter when calling again
+                    continue_from_step=continue_from_step
+                )
 
     # return the unit test as a string
     return code
