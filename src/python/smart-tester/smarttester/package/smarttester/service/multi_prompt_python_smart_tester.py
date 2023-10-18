@@ -1,12 +1,17 @@
 # imports needed to run the code in this notebook
 import ast  # used for detecting whether generated Python code is valid
+import os
+import time
 
 import openai  # used for calling the OpenAI API
 
 # example of a function that uses a multi-step prompt to write unit tests
 
+from smarttester import PATH_saved_files
 from smarttester.utils.messages_printer import print_messages, print_message_delta
 from smarttester.utils.text_utils import _get_bullets_number
+
+from smarttester.utils.save_text import save_text_in_saved_files_dir
 
 
 def explain_tests_from_function(
@@ -56,7 +61,7 @@ def explain_tests_from_function(
         if "content" in delta:
             explanation += delta["content"]
     explain_assistant_message = {"role": "assistant", "content": explanation}
-    return explain_system_message, explain_user_message, explain_assistant_message
+    return explanation, explain_system_message, explain_user_message, explain_assistant_message
 
 
 def plan_tests_from_explain(
@@ -143,7 +148,7 @@ def increase_plan_tests(
         if "content" in delta:
             elaboration += delta["content"]
     elaboration_assistant_message = {"role": "assistant", "content": elaboration}
-    return elaboration_user_message, elaboration_assistant_message
+    return elaboration, elaboration_user_message, elaboration_assistant_message
 
 
 def generate_tests_form_plan(
@@ -215,7 +220,8 @@ def generate_tests_form_plan(
     return execution
 
 
-def post_process_execution_response(execution: str, programming_language="python", execute_model="gpt-3.5-turbo") -> str:
+def post_process_execution_response(execution: str, programming_language="python",
+                                    execute_model="gpt-3.5-turbo") -> str:
     if programming_language == "python" and execute_model == "gpt-3.5-turbo":
         code = execution.split("```python")[1].split("```")[0].strip()
     else:
@@ -228,6 +234,7 @@ def unit_tests_from_function(
         unit_test_package: str = "pytest",  # unit testing package; use the name as it appears in the import statement
         approx_min_cases_to_cover: int = 7,  # minimum number of test case categories to cover (approximate)
         print_text: bool = False,  # optionally prints text; helpful for understanding the function & debugging
+        save_text: bool = True,  # optionally save text in file system
         explain_model: str = "gpt-3.5-turbo",  # model used to generate text plans in step 1
         plan_model: str = "gpt-3.5-turbo",  # model used to generate text plans in steps 2 and 2b
         execute_model: str = "gpt-3.5-turbo",  # model used to generate code in step 3
@@ -236,14 +243,34 @@ def unit_tests_from_function(
 ) -> str:
     """Returns a unit test for a given Python function, using a 3-step GPT prompt."""
 
+    if save_text:
+        function_name = function_to_test.split("def ")[1].split("(")[0]
+        if " " in function_name:
+            function_name = function_name.split(" ")[0]
+        if function_name is None or len(function_name) < 1:
+            function_name = "unknown_function"
+        save_dir = f"{int(time.time() * 1000)}-{function_name}"
+        try:
+            file_path = PATH_saved_files / save_dir
+            os.mkdir(file_path)
+        except OSError:
+            raise Exception(f"{file_path} already exists. Check for errors, delete it and try again.")
+        save_text_in_saved_files_dir("function", save_dir, function_to_test)
+
     # Step 1: Generate an explanation of the function
     explain_response = explain_tests_from_function(function_to_test, print_text, explain_model, temperature)
-    explain_system_message, explain_user_message, explain_assistant_message = explain_response
+    explanation, explain_system_message, explain_user_message, explain_assistant_message = explain_response
+
+    if save_text:
+        save_text_in_saved_files_dir("explain", save_dir, explanation)
 
     # Step 2: Generate a plan to write a unit test
     plan_response = plan_tests_from_explain(explain_system_message, explain_user_message, explain_assistant_message,
                                             unit_test_package, print_text, plan_model, temperature)
     plan, plan_user_message, plan_assistant_message = plan_response
+
+    if save_text:
+        save_text_in_saved_files_dir("plan", save_dir, plan)
 
     # Step 2b: If the plan is short, ask GPT to elaborate further
     # this counts top-level bullets (e.g., categories), but not sub-bullets (e.g., test cases)
@@ -253,13 +280,14 @@ def unit_tests_from_function(
 
     elaboration_user_message, elaboration_assistant_message = None, None
     if elaboration_needed:
-        elaboration_user_message, elaboration_assistant_message = increase_plan_tests(explain_system_message,
-                                                                                      explain_user_message,
-                                                                                      explain_assistant_message,
-                                                                                      plan_user_message,
-                                                                                      plan_assistant_message,
-                                                                                      print_text, plan_model,
-                                                                                      temperature)
+        elaboration_response = increase_plan_tests(explain_system_message, explain_user_message,
+                                                   explain_assistant_message, plan_user_message, plan_assistant_message,
+                                                   print_text, plan_model, temperature)
+
+        elaboration, elaboration_user_message, elaboration_assistant_message = elaboration_response
+
+        if save_text:
+            save_text_in_saved_files_dir("elaboration", save_dir, elaboration)
 
     # Step 3: Generate the unit test
     execution_response = generate_tests_form_plan(explain_user_message, explain_assistant_message, plan_user_message,
@@ -268,8 +296,16 @@ def unit_tests_from_function(
                                                   elaboration_assistant_message, unit_test_package, print_text,
                                                   execute_model, temperature)
 
+    execution = execution_response
+
+    if save_text:
+        save_text_in_saved_files_dir("execution", save_dir, execution)
+
     # Custom post-processing to fix errors
     code = post_process_execution_response(execution_response)
+
+    if save_text:
+        save_text_in_saved_files_dir("code", save_dir, code, "py")
 
     # retry if fails
     try:
