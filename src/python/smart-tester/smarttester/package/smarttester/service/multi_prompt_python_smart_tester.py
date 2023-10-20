@@ -10,6 +10,7 @@ import openai  # used for calling the OpenAI API
 from smarttester import PATH_saved_files
 from smarttester.service.multi_prompt_data import MultiPromptData
 from smarttester.service.dataclass.function_data import FunctionData
+from smarttester.service.dataclass.explain_data import ExplainData
 from smarttester.utils.messages_printer import print_messages, print_message_delta
 from smarttester.utils.text_utils import _get_bullets_number
 
@@ -17,38 +18,18 @@ from smarttester.utils.save_text import save_text_in_saved_files_dir
 
 
 def explain_tests_from_function(
-        multi_prompt_data: MultiPromptData,  # Python function to test, as a string
+        multi_prompt_data: MultiPromptData,  # input and output data structure
         print_text: bool = False,  # optionally prints text; helpful for understanding the function & debugging
         explain_model: str = "gpt-3.5-turbo",  # model used to generate text plans in step 1
-        temperature: float = 0.4,  # temperature = 0 can sometimes get stuck in repetitive loops, so we use 0.4
-) -> (dict[str, str], dict[str, str], dict[str, str]):
+        temperature: float = 0.4,  # temperature = 0 can sometimes get stuck in repetitive loops, so we use 0.4,
+) -> str:
     """Returns a unit test for a given Python function, using a 3-step GPT prompt."""
-
-    # Step 1: Generate an explanation of the function
-
-    # create a markdown-formatted message that asks GPT to explain the function, formatted as a bullet list
-    explain_system_message = {
-        "role": "system",
-        "content": """You are a world-class Python developer with an eagle eye for unintended bugs and edge cases. 
-        You carefully explain code with great detail and accuracy. You organize your explanations in 
-        markdown-formatted, bulleted lists.
-        """,
-    }
 
     function_data: FunctionData = multi_prompt_data.get_function_data()
     function_to_test = function_data.function
 
-    explain_user_message = {
-        "role": "user",
-        "content": f"""
-            Please explain the following Python function.
-            Review what each element of the function is doing precisely and what the author's intentions may have been.
-            Organize your explanation as a markdown-formatted, bulleted list.
-            ```python
-            {function_to_test}
-            ```
-        """,
-    }
+    explain_system_message, explain_user_message = multi_prompt_data.init_explain_input(function_to_test)
+
     explain_messages = [explain_system_message, explain_user_message]
     if print_text:
         print_messages(explain_messages)
@@ -66,20 +47,21 @@ def explain_tests_from_function(
             print_message_delta(delta)
         if "content" in delta:
             explanation += delta["content"]
-    explain_assistant_message = {"role": "assistant", "content": explanation}
-    return explanation, explain_system_message, explain_user_message, explain_assistant_message
+
+    multi_prompt_data.init_explain_output(explanation)
+
+    return explanation
 
 
 def plan_tests_from_explain(
-        explain_system_message: dict[str, str],
-        explain_user_message: dict[str, str],
-        explain_assistant_message: dict[str, str],
+        multi_prompt_data: MultiPromptData,  # input and output data structure
         unit_test_package: str = "pytest",  # unit testing package; use the name as it appears in the import statement
         print_text: bool = False,  # optionally prints text; helpful for understanding the function & debugging
         plan_model: str = "gpt-3.5-turbo",  # model used to generate text plans in steps 2 and 2b
         temperature: float = 0.4,  # temperature = 0 can sometimes get stuck in repetitive loops, so we use 0.4
 ) -> (str, dict[str, str], dict[str, str]):
     # Asks GPT to plan out cases the units tests should cover, formatted as a bullet list
+
     plan_user_message = {
         "role": "user",
         "content": f"""A good unit test suite should aim to:
@@ -91,10 +73,12 @@ def plan_tests_from_explain(
         To help unit test the function above, list diverse scenarios that the function should be able to handle
         (and under each scenario, include a few examples as sub-bullets).""",
     }
+
+    explain_data: ExplainData = multi_prompt_data.explain_data
     plan_messages = [
-        explain_system_message,
-        explain_user_message,
-        explain_assistant_message,
+        explain_data.explain_system_message,
+        explain_data.explain_user_message,
+        explain_data.explain_assistant_message,
         plan_user_message,
     ]
     if print_text:
@@ -117,9 +101,7 @@ def plan_tests_from_explain(
 
 
 def increase_plan_tests(
-        explain_system_message: dict[str, str],
-        explain_user_message: dict[str, str],
-        explain_assistant_message: dict[str, str],
+        multi_prompt_data: MultiPromptData,  # input and output data structure
         plan_user_message: dict[str, str],
         plan_assistant_message: dict[str, str],
         print_text: bool = False,  # optionally prints text; helpful for understanding the function & debugging
@@ -130,10 +112,13 @@ def increase_plan_tests(
         "role": "user",
         "content": f"""In addition to those scenarios above, list a few rare or unexpected edge cases (and as before, under each edge case, include a few examples as sub-bullets).""",
     }
+
+    explain_data: ExplainData = multi_prompt_data.explain_data
+
     elaboration_messages = [
-        explain_system_message,
-        explain_user_message,
-        explain_assistant_message,
+        explain_data.explain_system_message,
+        explain_data.explain_user_message,
+        explain_data.explain_assistant_message,
         plan_user_message,
         plan_assistant_message,
         elaboration_user_message,
@@ -158,8 +143,7 @@ def increase_plan_tests(
 
 
 def generate_tests_form_plan(
-        explain_user_message: dict[str, str],
-        explain_assistant_message: dict[str, str],
+        multi_prompt_data: MultiPromptData,  # input and output data structure
         plan_user_message: dict[str, str],
         plan_assistant_message: dict[str, str],
         function_to_test: str,  # Python function to test, as a string
@@ -195,10 +179,12 @@ def generate_tests_form_plan(
     {{insert unit test code here}}
     ```""",
     }
+
+    explain_data: ExplainData = multi_prompt_data.get_explain_data()
     execute_messages = [
         execute_system_message,
-        explain_user_message,
-        explain_assistant_message,
+        explain_data.explain_user_message,
+        explain_data.explain_assistant_message,
         plan_user_message,
         plan_assistant_message,
     ]
@@ -288,15 +274,19 @@ def unit_tests_from_function(
             # if we are continuing from step 1, we need to load the data from the saved files
             multi_prompt_data.load_function_data(save_dir)
 
-        explain_response = explain_tests_from_function(multi_prompt_data, print_text, explain_model, temperature)
-        explanation, explain_system_message, explain_user_message, explain_assistant_message = explain_response
+        explanation = explain_tests_from_function(multi_prompt_data, print_text, explain_model, temperature)
 
         if save_text:
             save_text_in_saved_files_dir("explain", save_dir, explanation)
 
     if continue_from_step <= 2:
         # Step 2: Generate a plan to write a unit test
-        plan_response = plan_tests_from_explain(explain_system_message, explain_user_message, explain_assistant_message,
+
+        if continue_from_step == 2:
+            # if we are continuing from step 2, we need to load the data from the saved files
+            multi_prompt_data.load_explain_data(save_dir)
+            
+        plan_response = plan_tests_from_explain(multi_prompt_data,
                                                 unit_test_package, print_text, plan_model, temperature)
         plan, plan_user_message, plan_assistant_message = plan_response
 
@@ -312,8 +302,7 @@ def unit_tests_from_function(
 
         elaboration_user_message, elaboration_assistant_message = None, None
         if elaboration_needed:
-            elaboration_response = increase_plan_tests(explain_system_message, explain_user_message,
-                                                       explain_assistant_message, plan_user_message, plan_assistant_message,
+            elaboration_response = increase_plan_tests(multi_prompt_data, plan_user_message, plan_assistant_message,
                                                        print_text, plan_model, temperature)
 
             elaboration, elaboration_user_message, elaboration_assistant_message = elaboration_response
@@ -323,7 +312,7 @@ def unit_tests_from_function(
 
     if continue_from_step <= 4:
         # Step 3: Generate the unit test
-        execution_response = generate_tests_form_plan(explain_user_message, explain_assistant_message, plan_user_message,
+        execution_response = generate_tests_form_plan(multi_prompt_data, plan_user_message,
                                                       plan_assistant_message, function_to_test, elaboration_needed,
                                                       elaboration_user_message,
                                                       elaboration_assistant_message, unit_test_package, print_text,
