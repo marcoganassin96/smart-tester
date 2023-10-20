@@ -8,6 +8,8 @@ import openai  # used for calling the OpenAI API
 # example of a function that uses a multi-step prompt to write unit tests
 
 from smarttester import PATH_saved_files
+from smarttester.service.multi_prompt_data import MultiPromptData
+from smarttester.service.dataclass.function_data import FunctionData
 from smarttester.utils.messages_printer import print_messages, print_message_delta
 from smarttester.utils.text_utils import _get_bullets_number
 
@@ -15,7 +17,7 @@ from smarttester.utils.save_text import save_text_in_saved_files_dir
 
 
 def explain_tests_from_function(
-        function_to_test: str,  # Python function to test, as a string
+        multi_prompt_data: MultiPromptData,  # Python function to test, as a string
         print_text: bool = False,  # optionally prints text; helpful for understanding the function & debugging
         explain_model: str = "gpt-3.5-turbo",  # model used to generate text plans in step 1
         temperature: float = 0.4,  # temperature = 0 can sometimes get stuck in repetitive loops, so we use 0.4
@@ -32,6 +34,10 @@ def explain_tests_from_function(
         markdown-formatted, bulleted lists.
         """,
     }
+
+    function_data: FunctionData = multi_prompt_data.get_function_data()
+    function_to_test = function_data.function
+
     explain_user_message = {
         "role": "user",
         "content": f"""
@@ -241,8 +247,11 @@ def unit_tests_from_function(
         temperature: float = 0.4,  # temperature = 0 can sometimes get stuck in repetitive loops, so we use 0.4
         reruns_if_fail: int = 1,  # if the output code cannot be parsed, this will re-run the function up to N times
         continue_from_step: int = 0, # restarts the process from a given step; options are 0: "start", 1: "explain", 2: "plan", 3: "plan_more", 4: "execute", 5: "code"
+        source_data_dir: str = None,  # directory where data of the previous steps are stored
 ) -> str:
     """Returns a unit test for a given Python function, using a 3-step GPT prompt."""
+
+    multi_prompt_data = MultiPromptData()
 
     if continue_from_step < 0:
         raise Exception("continue_from_step must be >= 0")
@@ -250,7 +259,11 @@ def unit_tests_from_function(
     if continue_from_step > 6:
         raise Exception("continue_from_step must be <= 6")
 
+    save_dir = None
     if continue_from_step == 0:
+        # if we are continuing from step 0, we need initialize the data with the function to test
+        multi_prompt_data.init_function_input(function_to_test)
+
         # Step 0: Start and optionally save function to test
         if save_text:
             function_name = function_to_test.split("def ")[1].split("(")[0]
@@ -265,10 +278,17 @@ def unit_tests_from_function(
             except OSError:
                 raise Exception(f"{file_path} already exists. Check for errors, delete it and try again.")
             save_text_in_saved_files_dir("function", save_dir, function_to_test)
+    else:
+        save_dir = source_data_dir
 
     if continue_from_step <= 1:
         # Step 1: Generate an explanation of the function
-        explain_response = explain_tests_from_function(function_to_test, print_text, explain_model, temperature)
+
+        if continue_from_step == 1:
+            # if we are continuing from step 1, we need to load the data from the saved files
+            multi_prompt_data.load_function_data(save_dir)
+
+        explain_response = explain_tests_from_function(multi_prompt_data, print_text, explain_model, temperature)
         explanation, explain_system_message, explain_user_message, explain_assistant_message = explain_response
 
         if save_text:
