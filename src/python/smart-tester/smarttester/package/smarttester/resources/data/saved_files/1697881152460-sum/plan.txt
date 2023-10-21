@@ -1,0 +1,19 @@
+- The function should be able to handle positive integers:
+  - Example: `sum(2, 3)` should return `5`
+  - Example: `sum(10, 20)` should return `30`
+- The function should be able to handle negative integers:
+  - Example: `sum(-5, -10)` should return `-15`
+  - Example: `sum(-3, 7)` should return `4`
+- The function should be able to handle zero as one or both of the inputs:
+  - Example: `sum(0, 5)` should return `5`
+  - Example: `sum(-2, 0)` should return `-2`
+  - Example: `sum(0, 0)` should return `0`
+- The function should be able to handle large integers:
+  - Example: `sum(1000000, 2000000)` should return `3000000`
+  - Example: `sum(9999999999, 1)` should return `10000000000`
+- The function should be able to handle floating-point numbers (since the function arguments are annotated as `int`, this may not be the intended use, but it's worth testing):
+  - Example: `sum(2.5, 3.7)` should return `6.2`
+  - Example: `sum(-1.5, 2.3)` should return `0.8`
+- The function should be able to handle non-numeric inputs (since the function arguments are annotated as `int`, this may not be the intended use, but it's worth testing):
+  - Example: `sum("2", 3)` should raise a `TypeError`
+  - Example: `sum(2, "3")` should raise a `TypeError`
