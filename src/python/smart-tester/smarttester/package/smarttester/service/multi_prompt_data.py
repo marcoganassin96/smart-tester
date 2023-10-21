@@ -1,5 +1,6 @@
-from smarttester.service.dataclass.explain_data import ExplainData
 from smarttester.service.dataclass.function_data import FunctionData
+from smarttester.service.dataclass.explain_data import ExplainData
+from smarttester.service.dataclass.plan_data import PlanData
 from smarttester.utils.save_text import load_file_from_saved_files_dir
 
 
@@ -7,6 +8,7 @@ class MultiPromptData:
     def __init__(self):
         self.function_data: FunctionData = FunctionData()
         self.explain_data: ExplainData = ExplainData()
+        self.plan_data: PlanData = PlanData()
 
     # Function data
 
@@ -49,6 +51,39 @@ class MultiPromptData:
     def get_explain_data(self) -> ExplainData:
         return self.explain_data
 
+    # Plan data
+
+    def init_plan_input(self, unit_test_package: str) -> tuple[dict[str, str], list[dict[str, str]]]:
+        self.plan_data.plan_user_message = {
+            "role": "user",
+            "content": f"""A good unit test suite should aim to:
+            - Test the function's behavior for a wide range of possible inputs
+            - Test edge cases that the author may not have foreseen
+            - Take advantage of the features of `{unit_test_package}` to make the tests easy to write and maintain
+            - Be easy to read and understand, with clean code and descriptive names
+            - Be deterministic, so that the tests always pass or fail in the same way
+            To help unit test the function above, list diverse scenarios that the function should be able to handle
+            (and under each scenario, include a few examples as sub-bullets).""",
+        }
+
+        explain_data: ExplainData = self.explain_data
+        plan_messages: list[dict[str, str]] = [
+            explain_data.explain_system_message,
+            explain_data.explain_user_message,
+            explain_data.explain_assistant_message,
+            self.plan_data.plan_user_message,
+        ]
+
+        return self.plan_data.plan_user_message, plan_messages
+
+    def init_plan_output(self, plan: str) -> dict[str, str]:
+        self.plan_data.plan = plan
+        self.plan_data.plan_assistant_message = {"role": "assistant", "content": plan}
+        return self.plan_data.plan_assistant_message
+
+    def get_plan_data(self) -> PlanData:
+        return self.plan_data
+
     # Load data from file system
 
     def load_function_data(self, saved_dir: str) -> FunctionData:
@@ -62,3 +97,10 @@ class MultiPromptData:
         explanation = load_file_from_saved_files_dir(saved_dir=saved_dir, file_name="explain", ext="txt")
         self.init_explain_output(explanation=explanation)
         return self.explain_data
+
+    def load_plan_data(self, saved_dir: str, unit_test_package="pytest") -> PlanData:
+        self.explain_data = self.load_explain_data(saved_dir=saved_dir)
+        self.init_plan_input(unit_test_package=unit_test_package)
+        plan = load_file_from_saved_files_dir(saved_dir=saved_dir, file_name="plan", ext="txt")
+        self.init_plan_output(plan=plan)
+        return self.plan_data
