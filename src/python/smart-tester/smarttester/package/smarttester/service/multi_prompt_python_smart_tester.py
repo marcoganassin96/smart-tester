@@ -8,6 +8,7 @@ import openai  # used for calling the OpenAI API
 # example of a function that uses a multi-step prompt to write unit tests
 
 from smarttester import PATH_saved_files
+from smarttester.service.dataclass.elaboration_data import ElaborationData
 from smarttester.service.dataclass.plan_data import PlanData
 from smarttester.service.multi_prompt_data import MultiPromptData
 from smarttester.service.dataclass.function_data import FunctionData
@@ -92,13 +93,9 @@ def increase_plan_tests(
         plan_model: str = "gpt-3.5-turbo",  # model used to generate text plans in steps 2 and 2b
         temperature: float = 0.4,  # temperature = 0 can sometimes get stuck in repetitive loops, so we use 0.4
 ) -> (str, dict[str, str], dict[str, str]):
-    elaboration_user_message = {
-        "role": "user",
-        "content": f"""In addition to those scenarios above, list a few rare or unexpected edge cases (and as before, under each edge case, include a few examples as sub-bullets).""",
-    }
-
-    explain_data: ExplainData = multi_prompt_data.explain_data
-    plan_data: PlanData = multi_prompt_data.plan_data
+    explain_data = multi_prompt_data.get_explain_data()
+    plan_data = multi_prompt_data.get_plan_data()
+    elaboration_user_message = multi_prompt_data.init_elaboration_input()
 
     elaboration_messages = [
         explain_data.explain_system_message,
@@ -108,6 +105,7 @@ def increase_plan_tests(
         plan_data.plan_assistant_message,
         elaboration_user_message,
     ]
+
     if print_text:
         print_messages([elaboration_user_message])
     elaboration_response = openai.ChatCompletion.create(
@@ -123,16 +121,16 @@ def increase_plan_tests(
             print_message_delta(delta)
         if "content" in delta:
             elaboration += delta["content"]
-    elaboration_assistant_message = {"role": "assistant", "content": elaboration}
-    return elaboration, elaboration_user_message, elaboration_assistant_message
+
+    multi_prompt_data.init_elaboration_output(elaboration)
+
+    return elaboration
+
 
 
 def generate_tests_form_plan(
         multi_prompt_data: MultiPromptData,  # input and output data structure
         function_to_test: str,  # Python function to test, as a string
-        elaboration_needed: bool = False,
-        elaboration_user_message: dict[str, str] = None,
-        elaboration_assistant_message: dict[str, str] = None,
         unit_test_package: str = "pytest",  # unit testing package; use the name as it appears in the import statement
         print_text: bool = False,  # optionally prints text; helpful for understanding the function & debugging
         execute_model: str = "gpt-3.5-turbo",  # model used to generate code in step 3
@@ -173,8 +171,15 @@ def generate_tests_form_plan(
         plan_data.plan_user_message,
         plan_data.plan_assistant_message,
     ]
-    if elaboration_needed:
-        execute_messages += [elaboration_user_message, elaboration_assistant_message]
+
+    elaboration_data: ElaborationData = multi_prompt_data.get_elaboration_data()
+
+    if elaboration_data.elaboration_needed:
+        elaboration_data: ElaborationData = multi_prompt_data.get_elaboration_data()
+        execute_messages += [
+            elaboration_data.elaboration_user_message,
+            elaboration_data.elaboration_assistant_message
+        ]
     execute_messages += [execute_user_message]
     if print_text:
         print_messages([execute_system_message, execute_user_message])
@@ -288,30 +293,29 @@ def unit_tests_from_function(
         num_bullets = _get_bullets_number(plan)
         elaboration_needed = num_bullets < approx_min_cases_to_cover
 
-        elaboration_user_message, elaboration_assistant_message = None, None
         if elaboration_needed:
-            elaboration_response = increase_plan_tests(multi_prompt_data, print_text, plan_model, temperature)
-
-            elaboration, elaboration_user_message, elaboration_assistant_message = elaboration_response
+            elaboration = increase_plan_tests(multi_prompt_data, print_text, plan_model, temperature)
 
             if save_text:
                 save_text_in_saved_files_dir("elaboration", save_dir, elaboration)
 
     if continue_from_step <= 4:
+
         # Step 3: Generate the unit test
-        execution_response = generate_tests_form_plan(multi_prompt_data, function_to_test, elaboration_needed,
-                                                      elaboration_user_message, elaboration_assistant_message,
+
+        if continue_from_step == 4:
+            multi_prompt_data.load_elaboration_data(save_dir, unit_test_package)
+
+        execution = generate_tests_form_plan(multi_prompt_data, function_to_test,
                                                       unit_test_package, print_text,
                                                       execute_model, temperature)
-
-        execution = execution_response
 
         if save_text:
             save_text_in_saved_files_dir("execution", save_dir, execution)
 
     if continue_from_step <= 5:
         # Custom post-processing to fix errors
-        code = post_process_execution_response(execution_response)
+        code = post_process_execution_response(execution)
 
         if save_text:
             save_text_in_saved_files_dir("code", save_dir, code, "py")

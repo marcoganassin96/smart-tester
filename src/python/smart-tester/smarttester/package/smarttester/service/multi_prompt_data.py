@@ -1,3 +1,4 @@
+from smarttester.service.dataclass.elaboration_data import ElaborationData
 from smarttester.service.dataclass.function_data import FunctionData
 from smarttester.service.dataclass.explain_data import ExplainData
 from smarttester.service.dataclass.plan_data import PlanData
@@ -9,6 +10,7 @@ class MultiPromptData:
         self.function_data: FunctionData = FunctionData()
         self.explain_data: ExplainData = ExplainData()
         self.plan_data: PlanData = PlanData()
+        self.elaboration_data: ElaborationData = ElaborationData()
 
     # Function data
 
@@ -84,6 +86,24 @@ class MultiPromptData:
     def get_plan_data(self) -> PlanData:
         return self.plan_data
 
+    # Elaboration data
+
+    def init_elaboration_input(self) -> dict[str, str]:
+
+        self.elaboration_data.elaboration_user_message = {
+            "role": "user",
+            "content": f"""In addition to those scenarios above, list a few rare or unexpected edge cases (and as before, under each edge case, include a few examples as sub-bullets).""",
+        }
+        self.elaboration_data.elaboration_needed = True
+        return self.elaboration_data.elaboration_user_message
+
+    def init_elaboration_output(self, elaboration: str) -> dict[str, str]:
+        self.elaboration_data.elaboration = elaboration
+        self.elaboration_data.elaboration_assistant_message = {"role": "assistant", "content": elaboration}
+
+    def get_elaboration_data(self) -> ElaborationData:
+        return self.elaboration_data
+
     # Load data from file system
 
     def load_function_data(self, saved_dir: str) -> FunctionData:
@@ -104,3 +124,15 @@ class MultiPromptData:
         plan = load_file_from_saved_files_dir(saved_dir=saved_dir, file_name="plan", ext="txt")
         self.init_plan_output(plan=plan)
         return self.plan_data
+
+    def load_elaboration_data(self, saved_dir: str, unit_test_package="pytest") -> ElaborationData:
+        self.load_plan_data(saved_dir=saved_dir, unit_test_package=unit_test_package)
+
+        try:  # elaboration is optional
+            elaboration = load_file_from_saved_files_dir(saved_dir=saved_dir, file_name="elaboration", ext="txt")
+            self.init_elaboration_input()
+            self.init_elaboration_output(elaboration=elaboration)
+        except FileNotFoundError:
+            self.elaboration_data = ElaborationData(elaboration_needed=False)
+
+        return self.elaboration_data
