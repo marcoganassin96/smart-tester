@@ -7,25 +7,35 @@ def sum(a: int, b: int) -> int:
 
 # unit tests
 @pytest.mark.parametrize("a, b, expected", [
-    (2, 3, 5),  # positive integers
+    # Basic scenarios
+    (2, 3, 5),
     (10, 20, 30),
-    (-5, -10, -15),  # negative integers
-    (-3, 7, 4),
-    (0, 5, 5),  # zero as one of the inputs
-    (-2, 0, -2),
+    (-5, -10, -15),
+    (-100, -200, -300),
+    (5, -10, -5),
+    (100, -200, -100),
+    (-5, 10, 5),
+    (-100, 200, 100),
     (0, 0, 0),
-    (1000000, 2000000, 3000000),  # large integers
-    (9999999999, 1, 10000000000),
-    (2.5, 3.7, 6.2),  # floating-point numbers
-    (-1.5, 2.3, 0.8),
+    (0, -5, -5),
+    # Edge cases
+    (1000000, 2000000, 3000000),
+    (-1000000, -2000000, -3000000),
+    (None, 5, pytest.raises(TypeError)),
+    (10, None, pytest.raises(TypeError)),
+    (None, None, pytest.raises(TypeError)),
+    (3.14, 5, pytest.raises(TypeError)),
+    (10, "20", pytest.raises(TypeError)),
+    ("hello", "world", pytest.raises(TypeError)),
+    # Special cases
+    (5, 5, 10),
+    (-10, -10, -20),
+    (1000000000000000000000000, 1, 1000000000000000000000001),
+    (-999999999999999999999999, 1000000000000000000000000, 1)
 ])
 def test_sum(a, b, expected):
-    assert sum(a, b) == expected
-
-@pytest.mark.parametrize("a, b", [
-    ("2", 3),  # non-numeric inputs
-    (2, "3"),
-])
-def test_sum_with_non_numeric_inputs(a, b):
-    with pytest.raises(TypeError):
-        sum(a, b)
+    if isinstance(expected, int):
+        assert sum(a, b) == expected
+    else:
+        with expected:
+            sum(a, b)

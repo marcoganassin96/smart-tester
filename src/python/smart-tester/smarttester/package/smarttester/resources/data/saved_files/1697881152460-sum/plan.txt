@@ -1,19 +1,41 @@
-- The function should be able to handle positive integers:
-  - Example: `sum(2, 3)` should return `5`
-  - Example: `sum(10, 20)` should return `30`
-- The function should be able to handle negative integers:
-  - Example: `sum(-5, -10)` should return `-15`
-  - Example: `sum(-3, 7)` should return `4`
-- The function should be able to handle zero as one or both of the inputs:
-  - Example: `sum(0, 5)` should return `5`
-  - Example: `sum(-2, 0)` should return `-2`
-  - Example: `sum(0, 0)` should return `0`
-- The function should be able to handle large integers:
-  - Example: `sum(1000000, 2000000)` should return `3000000`
-  - Example: `sum(9999999999, 1)` should return `10000000000`
-- The function should be able to handle floating-point numbers (since the function arguments are annotated as `int`, this may not be the intended use, but it's worth testing):
-  - Example: `sum(2.5, 3.7)` should return `6.2`
-  - Example: `sum(-1.5, 2.3)` should return `0.8`
-- The function should be able to handle non-numeric inputs (since the function arguments are annotated as `int`, this may not be the intended use, but it's worth testing):
-  - Example: `sum("2", 3)` should raise a `TypeError`
-  - Example: `sum(2, "3")` should raise a `TypeError`
+Here are some diverse scenarios that the `sum` function should be able to handle:
+
+1. Basic scenarios:
+   - `a` and `b` are positive integers: 
+     - `sum(2, 3)` should return `5`
+     - `sum(10, 20)` should return `30`
+   - `a` and `b` are negative integers: 
+     - `sum(-5, -10)` should return `-15`
+     - `sum(-100, -200)` should return `-300`
+   - `a` is positive and `b` is negative: 
+     - `sum(5, -10)` should return `-5`
+     - `sum(100, -200)` should return `-100`
+   - `a` is negative and `b` is positive: 
+     - `sum(-5, 10)` should return `5`
+     - `sum(-100, 200)` should return `100`
+   - `a` and `b` are zero: 
+     - `sum(0, 0)` should return `0`
+     - `sum(0, -5)` should return `-5`
+
+2. Edge cases:
+   - Large integers: 
+     - `sum(1000000, 2000000)` should return `3000000`
+     - `sum(-1000000, -2000000)` should return `-3000000`
+   - One or both arguments are `None`:
+     - `sum(None, 5)` should raise a `TypeError`
+     - `sum(10, None)` should raise a `TypeError`
+     - `sum(None, None)` should raise a `TypeError`
+   - One or both arguments are not integers:
+     - `sum(3.14, 5)` should raise a `TypeError`
+     - `sum(10, "20")` should raise a `TypeError`
+     - `sum("hello", "world")` should raise a `TypeError`
+
+3. Special cases:
+   - `a` and `b` are equal:
+     - `sum(5, 5)` should return `10`
+     - `sum(-10, -10)` should return `-20`
+   - `a` or `b` is a very large number:
+     - `sum(1000000000000000000000000, 1)` should return `1000000000000000000000001`
+     - `sum(-999999999999999999999999, 1000000000000000000000000)` should return `1`
+
+These scenarios cover a wide range of possible inputs and edge cases to ensure that the `sum` function behaves correctly in various situations.
