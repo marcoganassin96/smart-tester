@@ -175,7 +175,6 @@ def generate_tests_form_plan(
     elaboration_data: ElaborationData = multi_prompt_data.get_elaboration_data()
 
     if elaboration_data.elaboration_needed:
-        elaboration_data: ElaborationData = multi_prompt_data.get_elaboration_data()
         execute_messages += [
             elaboration_data.elaboration_user_message,
             elaboration_data.elaboration_assistant_message
