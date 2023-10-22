@@ -301,13 +301,21 @@ def unit_tests_from_function(
 
         code = post_process_execution_response(multi_prompt_data)
 
+        multi_prompt_data.init_post_processing_output(code)
+
         if save_text:
             save_text_in_saved_files_dir("code", save_dir, code, "py")
 
     if continue_from_step <= 6:
         # retry if fails
+
+        if continue_from_step == 6:
+            multi_prompt_data.load_post_processing_data(save_dir, unit_test_package)
         try:
-            ast.parse(code)
+            post_processing_data = multi_prompt_data.get_post_processing_data()
+            ast.parse(post_processing_data.code)
+            # return the unit test as a string
+            return post_processing_data.code
         except SyntaxError as e:
             print(f"Syntax error in generated code: {e}")
             if reruns_if_fail > 0:
@@ -325,5 +333,5 @@ def unit_tests_from_function(
                     continue_from_step=continue_from_step
                 )
 
-    # return the unit test as a string
-    return code
+    raise Exception(f"""Cannot generate a valid unit test for the current function after {reruns_if_fail} attempts.
+    Check the partial results in the directory {save_dir}.""")

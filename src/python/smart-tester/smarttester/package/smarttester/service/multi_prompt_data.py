@@ -3,6 +3,7 @@ from smarttester.service.dataclass.execution_data import ExecutionData
 from smarttester.service.dataclass.function_data import FunctionData
 from smarttester.service.dataclass.explain_data import ExplainData
 from smarttester.service.dataclass.plan_data import PlanData
+from smarttester.service.dataclass.post_processing_data import PostProcessingData
 from smarttester.utils.save_text import load_file_from_saved_files_dir
 
 
@@ -13,6 +14,7 @@ class MultiPromptData:
         self.plan_data: PlanData = PlanData()
         self.elaboration_data: ElaborationData = ElaborationData()
         self.execution_data: ExecutionData = ExecutionData()
+        self.post_processing_data: PostProcessingData = PostProcessingData
 
     # Function data
 
@@ -143,6 +145,14 @@ class MultiPromptData:
     def get_execution_data(self) -> ExecutionData :
         return self.execution_data
 
+    # Post processing data
+
+    def init_post_processing_output(self, code: str):
+        self.post_processing_data.code = code
+
+    def get_post_processing_data(self) -> PostProcessingData:
+        return self.post_processing_data
+
     # Load data from file system
 
     def load_function_data(self, saved_dir: str) -> FunctionData:
@@ -182,3 +192,10 @@ class MultiPromptData:
         execution = load_file_from_saved_files_dir(saved_dir=saved_dir, file_name="execution", ext="txt")
         self.init_execution_output(execution=execution)
         return self.execution_data
+
+    def load_post_processing_data(self, saved_dir: str, unit_test_package="pytest") -> PostProcessingData:
+        self.load_execution_data(saved_dir=saved_dir, unit_test_package=unit_test_package)
+        code = load_file_from_saved_files_dir(saved_dir=saved_dir, file_name="code", ext="py")
+        self.init_post_processing_output(code=code)
+        return self.post_processing_data
+
