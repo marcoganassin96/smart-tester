@@ -9,6 +9,7 @@ import openai  # used for calling the OpenAI API
 
 from smarttester import PATH_saved_files
 from smarttester.service.dataclass.elaboration_data import ElaborationData
+from smarttester.service.dataclass.execution_data import ExecutionData
 from smarttester.service.dataclass.plan_data import PlanData
 from smarttester.service.multi_prompt_data import MultiPromptData
 from smarttester.service.dataclass.function_data import FunctionData
@@ -130,36 +131,14 @@ def increase_plan_tests(
 
 def generate_tests_form_plan(
         multi_prompt_data: MultiPromptData,  # input and output data structure
-        function_to_test: str,  # Python function to test, as a string
         unit_test_package: str = "pytest",  # unit testing package; use the name as it appears in the import statement
         print_text: bool = False,  # optionally prints text; helpful for understanding the function & debugging
         execute_model: str = "gpt-3.5-turbo",  # model used to generate code in step 3
         temperature: float = 0.4,  # temperature = 0 can sometimes get stuck in repetitive loops, so we use 0.4
 ) -> str:
     # create a markdown-formatted prompt that asks GPT to complete a unit test
-    package_comment = ""
-    if unit_test_package == "pytest":
-        package_comment = "# below, each test case is represented by a tuple passed to the @pytest.mark.parametrize decorator"
-    execute_system_message = {
-        "role": "system",
-        "content": """You are a world-class Python developer with an eagle eye for unintended bugs and edge cases.
-                   You write careful, accurate unit tests. When asked to reply only with code, you write all of your code in a single block.""",
-    }
-    execute_user_message = {
-        "role": "user",
-        "content": f"""Using Python and the `{unit_test_package}` package, write a suite of unit tests for the 
-        function, following the cases above. Include helpful comments to explain each line. Reply only with code, 
-        formatted as follows: ```python # imports import {unit_test_package}  # used for our unit tests 
-    {{insert other imports as needed}}
 
-    # function to test
-    {function_to_test}
-
-    # unit tests
-    {package_comment}
-    {{insert unit test code here}}
-    ```""",
-    }
+    execute_system_message, execute_user_message = multi_prompt_data.init_execution_input(unit_test_package)
 
     explain_data: ExplainData = multi_prompt_data.get_explain_data()
     plan_data: PlanData = multi_prompt_data.plan_data
@@ -197,16 +176,19 @@ def generate_tests_form_plan(
         if "content" in delta:
             execution += delta["content"]
 
+    multi_prompt_data.init_execution_output(execution)
     # return the unit test as a string
     return execution
 
 
-def post_process_execution_response(execution: str, programming_language="python",
+def post_process_execution_response(multi_prompt_data: MultiPromptData,
+                                    programming_language="python",
                                     execute_model="gpt-3.5-turbo") -> str:
+    execution_data: ExecutionData = multi_prompt_data.get_execution_data()
     if programming_language == "python" and execute_model == "gpt-3.5-turbo":
-        code = execution.split("```python")[1].split("```")[0].strip()
+        code = execution_data.execution.split("```python")[1].split("```")[0].strip()
     else:
-        code = execution
+        code = execution_data.execution
     return code
 
 
@@ -305,16 +287,19 @@ def unit_tests_from_function(
         if continue_from_step == 4:
             multi_prompt_data.load_elaboration_data(save_dir, unit_test_package)
 
-        execution = generate_tests_form_plan(multi_prompt_data, function_to_test,
-                                                      unit_test_package, print_text,
-                                                      execute_model, temperature)
+        execution = generate_tests_form_plan(multi_prompt_data, unit_test_package, print_text,
+                                             execute_model, temperature)
 
         if save_text:
             save_text_in_saved_files_dir("execution", save_dir, execution)
 
     if continue_from_step <= 5:
         # Custom post-processing to fix errors
-        code = post_process_execution_response(execution)
+
+        if continue_from_step == 5:
+            multi_prompt_data.load_execution_data(save_dir, unit_test_package)
+
+        code = post_process_execution_response(multi_prompt_data)
 
         if save_text:
             save_text_in_saved_files_dir("code", save_dir, code, "py")

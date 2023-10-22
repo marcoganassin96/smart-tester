@@ -1,4 +1,5 @@
 from smarttester.service.dataclass.elaboration_data import ElaborationData
+from smarttester.service.dataclass.execution_data import ExecutionData
 from smarttester.service.dataclass.function_data import FunctionData
 from smarttester.service.dataclass.explain_data import ExplainData
 from smarttester.service.dataclass.plan_data import PlanData
@@ -11,6 +12,7 @@ class MultiPromptData:
         self.explain_data: ExplainData = ExplainData()
         self.plan_data: PlanData = PlanData()
         self.elaboration_data: ElaborationData = ElaborationData()
+        self.execution_data: ExecutionData = ExecutionData()
 
     # Function data
 
@@ -104,6 +106,43 @@ class MultiPromptData:
     def get_elaboration_data(self) -> ElaborationData:
         return self.elaboration_data
 
+    # Execution data
+
+    def init_execution_input(self, unit_test_package) -> dict[str, str]:
+        package_comment = ""
+        if unit_test_package == "pytest":
+            package_comment = "# below, each test case is represented by a tuple passed to the @pytest.mark.parametrize decorator"
+
+        self.execution_data.execute_system_message = {
+            "role": "system",
+            "content": """You are a world-class Python developer with an eagle eye for unintended bugs and edge cases.
+                       You write careful, accurate unit tests. When asked to reply only with code, you write all of your code in a single block.""",
+        }
+
+        self.execution_data.execute_user_message = {
+            "role": "user",
+            "content": f"""Using Python and the `{unit_test_package}` package, write a suite of unit tests for the 
+            function, following the cases above. Include helpful comments to explain each line. Reply only with code, 
+            formatted as follows: ```python # imports import {unit_test_package}  # used for our unit tests 
+        {{insert other imports as needed}}
+
+        # function to test
+        
+        {self.function_data.function}
+
+        # unit tests
+        {package_comment}
+        {{insert unit test code here}}
+        ```""",
+        }
+        return self.execution_data.execute_system_message, self.execution_data.execute_user_message
+
+    def init_execution_output(self, execution: str) -> dict[str, str]:
+        self.execution_data.execution = execution
+
+    def get_execution_data(self) -> ExecutionData :
+        return self.execution_data
+
     # Load data from file system
 
     def load_function_data(self, saved_dir: str) -> FunctionData:
@@ -136,3 +175,10 @@ class MultiPromptData:
             self.elaboration_data = ElaborationData(elaboration_needed=False)
 
         return self.elaboration_data
+
+    def load_execution_data(self, saved_dir: str, unit_test_package="pytest") -> ExecutionData:
+        self.load_elaboration_data(saved_dir=saved_dir, unit_test_package=unit_test_package)
+        self.init_execution_input(unit_test_package=unit_test_package)
+        execution = load_file_from_saved_files_dir(saved_dir=saved_dir, file_name="execution", ext="txt")
+        self.init_execution_output(execution=execution)
+        return self.execution_data
