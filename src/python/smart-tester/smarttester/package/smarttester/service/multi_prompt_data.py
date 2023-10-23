@@ -18,9 +18,11 @@ class MultiPromptData:
 
     # Function data
 
-    def init_function_input(self, function_to_test: str) -> str:
+    def init_function_input(self, function_to_test: str, programming_language: str = "python",
+                            unit_test_package: str = "pytest"):
         self.function_data.function = function_to_test
-        return function_to_test
+        self.function_data.programming_language = programming_language
+        self.function_data.unit_test_package = unit_test_package
 
     def get_function_data(self) -> FunctionData:
         return self.function_data
@@ -59,13 +61,14 @@ class MultiPromptData:
 
     # Plan data
 
-    def init_plan_input(self, unit_test_package: str) -> tuple[dict[str, str], list[dict[str, str]]]:
+    def init_plan_input(self) -> tuple[dict[str, str], list[dict[str, str]]]:
+        _unit_test_package = self.function_data.unit_test_package
         self.plan_data.plan_user_message = {
             "role": "user",
             "content": f"""A good unit test suite should aim to:
             - Test the function's behavior for a wide range of possible inputs
             - Test edge cases that the author may not have foreseen
-            - Take advantage of the features of `{unit_test_package}` to make the tests easy to write and maintain
+            - Take advantage of the features of `{_unit_test_package}` to make the tests easy to write and maintain
             - Be easy to read and understand, with clean code and descriptive names
             - Be deterministic, so that the tests always pass or fail in the same way
             To help unit test the function above, list diverse scenarios that the function should be able to handle
@@ -110,9 +113,10 @@ class MultiPromptData:
 
     # Execution data
 
-    def init_execution_input(self, unit_test_package) -> dict[str, str]:
+    def init_execution_input(self) -> dict[str, str]:
         package_comment = ""
-        if unit_test_package == "pytest":
+        _unit_test_package = self.function_data.unit_test_package
+        if _unit_test_package == "pytest":
             package_comment = "# below, each test case is represented by a tuple passed to the @pytest.mark.parametrize decorator"
 
         self.execution_data.execute_system_message = {
@@ -123,9 +127,9 @@ class MultiPromptData:
 
         self.execution_data.execute_user_message = {
             "role": "user",
-            "content": f"""Using Python and the `{unit_test_package}` package, write a suite of unit tests for the 
+            "content": f"""Using Python and the `{_unit_test_package}` package, write a suite of unit tests for the 
             function, following the cases above. Include helpful comments to explain each line. Reply only with code, 
-            formatted as follows: ```python # imports import {unit_test_package}  # used for our unit tests 
+            formatted as follows: ```python # imports import {_unit_test_package}  # used for our unit tests 
         {{insert other imports as needed}}
 
         # function to test
@@ -167,15 +171,15 @@ class MultiPromptData:
         self.init_explain_output(explanation=explanation)
         return self.explain_data
 
-    def load_plan_data(self, saved_dir: str, unit_test_package="pytest") -> PlanData:
+    def load_plan_data(self, saved_dir: str) -> PlanData:
         self.explain_data = self.load_explain_data(saved_dir=saved_dir)
-        self.init_plan_input(unit_test_package=unit_test_package)
+        self.init_plan_input()
         plan = load_file_from_saved_files_dir(saved_dir=saved_dir, file_name="plan", ext="txt")
         self.init_plan_output(plan=plan)
         return self.plan_data
 
-    def load_elaboration_data(self, saved_dir: str, unit_test_package="pytest") -> ElaborationData:
-        self.load_plan_data(saved_dir=saved_dir, unit_test_package=unit_test_package)
+    def load_elaboration_data(self, saved_dir: str) -> ElaborationData:
+        self.load_plan_data(saved_dir=saved_dir)
 
         try:  # elaboration is optional
             elaboration = load_file_from_saved_files_dir(saved_dir=saved_dir, file_name="elaboration", ext="txt")
@@ -186,15 +190,15 @@ class MultiPromptData:
 
         return self.elaboration_data
 
-    def load_execution_data(self, saved_dir: str, unit_test_package="pytest") -> ExecutionData:
-        self.load_elaboration_data(saved_dir=saved_dir, unit_test_package=unit_test_package)
-        self.init_execution_input(unit_test_package=unit_test_package)
+    def load_execution_data(self, saved_dir: str) -> ExecutionData:
+        self.load_elaboration_data(saved_dir=saved_dir)
+        self.init_execution_input()
         execution = load_file_from_saved_files_dir(saved_dir=saved_dir, file_name="execution", ext="txt")
         self.init_execution_output(execution=execution)
         return self.execution_data
 
-    def load_post_processing_data(self, saved_dir: str, unit_test_package="pytest") -> PostProcessingData:
-        self.load_execution_data(saved_dir=saved_dir, unit_test_package=unit_test_package)
+    def load_post_processing_data(self, saved_dir: str) -> PostProcessingData:
+        self.load_execution_data(saved_dir=saved_dir)
         code = load_file_from_saved_files_dir(saved_dir=saved_dir, file_name="code", ext="py")
         self.init_post_processing_output(code=code)
         return self.post_processing_data

@@ -58,14 +58,13 @@ def explain_tests_from_function(
 
 def plan_tests_from_explain(
         multi_prompt_data: MultiPromptData,  # input and output data structure
-        unit_test_package: str = "pytest",  # unit testing package; use the name as it appears in the import statement
         print_text: bool = False,  # optionally prints text; helpful for understanding the function & debugging
         plan_model: str = "gpt-3.5-turbo",  # model used to generate text plans in steps 2 and 2b
         temperature: float = 0.4,  # temperature = 0 can sometimes get stuck in repetitive loops, so we use 0.4
 ) -> str:
     # Asks GPT to plan out cases the units tests should cover, formatted as a bullet list
 
-    plan_user_message, plan_messages = multi_prompt_data.init_plan_input(unit_test_package)
+    plan_user_message, plan_messages = multi_prompt_data.init_plan_input()
 
     if print_text:
         print_messages([plan_user_message])
@@ -131,14 +130,13 @@ def increase_plan_tests(
 
 def generate_tests_form_plan(
         multi_prompt_data: MultiPromptData,  # input and output data structure
-        unit_test_package: str = "pytest",  # unit testing package; use the name as it appears in the import statement
         print_text: bool = False,  # optionally prints text; helpful for understanding the function & debugging
         execute_model: str = "gpt-3.5-turbo",  # model used to generate code in step 3
         temperature: float = 0.4,  # temperature = 0 can sometimes get stuck in repetitive loops, so we use 0.4
 ) -> str:
     # create a markdown-formatted prompt that asks GPT to complete a unit test
 
-    execute_system_message, execute_user_message = multi_prompt_data.init_execution_input(unit_test_package)
+    execute_system_message, execute_user_message = multi_prompt_data.init_execution_input()
 
     explain_data: ExplainData = multi_prompt_data.get_explain_data()
     plan_data: PlanData = multi_prompt_data.plan_data
@@ -182,10 +180,10 @@ def generate_tests_form_plan(
 
 
 def post_process_execution_response(multi_prompt_data: MultiPromptData,
-                                    programming_language="python",
                                     execute_model="gpt-3.5-turbo") -> str:
+    function_data: FunctionData = multi_prompt_data.get_function_data()
     execution_data: ExecutionData = multi_prompt_data.get_execution_data()
-    if programming_language == "python" and execute_model == "gpt-3.5-turbo":
+    if function_data.programming_language == "python" and execute_model == "gpt-3.5-turbo":
         code = execution_data.execution.split("```python")[1].split("```")[0].strip()
     else:
         code = execution_data.execution
@@ -193,7 +191,8 @@ def post_process_execution_response(multi_prompt_data: MultiPromptData,
 
 
 def unit_tests_from_function(
-        function_to_test: str,  # Python function to test, as a string
+        function_to_test: str,  # Function to test, as a string
+        programming_language: str = "python",  # programming language of the function to test
         unit_test_package: str = "pytest",  # unit testing package; use the name as it appears in the import statement
         approx_min_cases_to_cover: int = 7,  # minimum number of test case categories to cover (approximate)
         print_text: bool = False,  # optionally prints text; helpful for understanding the function & debugging
@@ -219,7 +218,7 @@ def unit_tests_from_function(
     save_dir = None
     if continue_from_step == 0:
         # if we are continuing from step 0, we need initialize the data with the function to test
-        multi_prompt_data.init_function_input(function_to_test)
+        multi_prompt_data.init_function_input(function_to_test, programming_language, unit_test_package)
 
         # Step 0: Start and optionally save function to test
         if save_text:
@@ -257,7 +256,7 @@ def unit_tests_from_function(
             # if we are continuing from step 2, we need to load the data from the saved files
             multi_prompt_data.load_explain_data(save_dir)
             
-        plan: str = plan_tests_from_explain(multi_prompt_data, unit_test_package, print_text, plan_model, temperature)
+        plan: str = plan_tests_from_explain(multi_prompt_data, print_text, plan_model, temperature)
 
         if save_text:
             save_text_in_saved_files_dir("plan", save_dir, plan)
@@ -266,7 +265,7 @@ def unit_tests_from_function(
         # Step 2b: If the plan is short, ask GPT to elaborate further
 
         if continue_from_step == 3:
-            multi_prompt_data.load_plan_data(save_dir, unit_test_package)
+            multi_prompt_data.load_plan_data(save_dir)
 
         # this counts top-level bullets (e.g., categories), but not sub-bullets (e.g., test cases)
 
@@ -285,9 +284,9 @@ def unit_tests_from_function(
         # Step 3: Generate the unit test
 
         if continue_from_step == 4:
-            multi_prompt_data.load_elaboration_data(save_dir, unit_test_package)
+            multi_prompt_data.load_elaboration_data(save_dir)
 
-        execution = generate_tests_form_plan(multi_prompt_data, unit_test_package, print_text,
+        execution = generate_tests_form_plan(multi_prompt_data, print_text,
                                              execute_model, temperature)
 
         if save_text:
@@ -297,7 +296,7 @@ def unit_tests_from_function(
         # Custom post-processing to fix errors
 
         if continue_from_step == 5:
-            multi_prompt_data.load_execution_data(save_dir, unit_test_package)
+            multi_prompt_data.load_execution_data(save_dir)
 
         code = post_process_execution_response(multi_prompt_data)
 
@@ -310,7 +309,7 @@ def unit_tests_from_function(
         # retry if fails
 
         if continue_from_step == 6:
-            multi_prompt_data.load_post_processing_data(save_dir, unit_test_package)
+            multi_prompt_data.load_post_processing_data(save_dir)
         try:
             post_processing_data = multi_prompt_data.get_post_processing_data()
             ast.parse(post_processing_data.code)
