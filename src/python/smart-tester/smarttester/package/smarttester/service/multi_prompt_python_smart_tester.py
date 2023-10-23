@@ -11,6 +11,7 @@ import openai  # used for calling the OpenAI API
 from smarttester import PATH_saved_files
 from smarttester.service.dataclass.elaboration_data import ElaborationData
 from smarttester.service.dataclass.execution_data import ExecutionData
+from smarttester.service.dataclass.multi_step_data import MultiStepData
 from smarttester.service.dataclass.plan_data import PlanData
 from smarttester.service.multi_prompt_data import MultiPromptData
 from smarttester.service.dataclass.function_data import FunctionData
@@ -210,6 +211,8 @@ def unit_tests_from_function(
 
     multi_prompt_data = MultiPromptData()
 
+    # start from here to lod multi_step_data_input
+
     if continue_from_step < 0:
         raise Exception("continue_from_step must be >= 0")
 
@@ -231,6 +234,9 @@ def unit_tests_from_function(
 
         multi_prompt_data.init_function_input(function_to_test, function_name, programming_language, unit_test_package)
 
+        multi_prompt_data.init_multi_step_data_input(explain_model, plan_model, execute_model)
+
+        # Step 0: Start and optionally save function to test
         if save_text:
             save_dir = f"{int(time.time() * 1000)}-{function_name}"
             try:
@@ -248,6 +254,10 @@ def unit_tests_from_function(
             function_metadata_json = json.dumps(function_metadata)
             save_text_in_saved_files_dir("function_metadata", save_dir, function_metadata_json, ext="json")
 
+            # save the multi_step_data as json file
+            multi_step_data: MultiStepData = multi_prompt_data.get_multi_step_data()
+            multi_step_data_json = multi_step_data.to_json()
+            save_text_in_saved_files_dir("multistep_data", save_dir, multi_step_data_json, "json")
     else:
         save_dir = source_data_dir
 
@@ -257,6 +267,7 @@ def unit_tests_from_function(
         if continue_from_step == 1:
             # if we are continuing from step 1, we need to load the data from the saved files
             multi_prompt_data.load_function_data(save_dir)
+            multi_prompt_data.load_multi_step_data(save_dir)
 
         explanation = explain_tests_from_function(multi_prompt_data, print_text, explain_model, temperature)
 

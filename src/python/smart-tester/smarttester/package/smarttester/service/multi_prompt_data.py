@@ -4,6 +4,7 @@ from smarttester.service.dataclass.elaboration_data import ElaborationData
 from smarttester.service.dataclass.execution_data import ExecutionData
 from smarttester.service.dataclass.function_data import FunctionData
 from smarttester.service.dataclass.explain_data import ExplainData
+from smarttester.service.dataclass.multi_step_data import MultiStepData
 from smarttester.service.dataclass.plan_data import PlanData
 from smarttester.service.dataclass.post_processing_data import PostProcessingData
 from smarttester.utils.save_text import load_file_from_saved_files_dir
@@ -11,12 +12,24 @@ from smarttester.utils.save_text import load_file_from_saved_files_dir
 
 class MultiPromptData:
     def __init__(self):
+        self.multi_step_data: MultiStepData = MultiStepData()
         self.function_data: FunctionData = FunctionData()
         self.explain_data: ExplainData = ExplainData()
         self.plan_data: PlanData = PlanData()
         self.elaboration_data: ElaborationData = ElaborationData()
         self.execution_data: ExecutionData = ExecutionData()
         self.post_processing_data: PostProcessingData = PostProcessingData
+
+    # Multi step data
+
+    def init_multi_step_data_input(self, explain_model: str = "gpt-3.5-turbo", plan_model: str = "gpt-3.5-turbo",
+                                   execute_model: str = "gpt-3.5-turbo") -> None:
+        self.multi_step_data.explain_model = explain_model
+        self.multi_step_data.plan_model = plan_model
+        self.multi_step_data.execute_model = execute_model
+
+    def get_multi_step_data(self) -> MultiStepData:
+        return self.multi_step_data
 
     # Function data
 
@@ -162,6 +175,12 @@ class MultiPromptData:
 
     # Load data from file system
 
+    def load_multi_step_data(self, saved_dir: str) -> MultiStepData:
+        multi_step_data_json = load_file_from_saved_files_dir(saved_dir=saved_dir, file_name="multistep_data", ext="json")
+        multi_step_data_dict = json.loads(multi_step_data_json)
+        self.multi_step_data = MultiStepData(**multi_step_data_dict)
+        return self.multi_step_data
+
     def load_function_data(self, saved_dir: str) -> FunctionData:
         function = load_file_from_saved_files_dir(saved_dir=saved_dir, file_name="function", ext="txt")
         self.function_data.function = function
@@ -173,6 +192,7 @@ class MultiPromptData:
         return self.function_data
 
     def load_explain_data(self, saved_dir: str) -> ExplainData:
+        self.multi_step_data = self.load_multi_step_data(saved_dir=saved_dir)
         self.function_data = self.load_function_data(saved_dir=saved_dir)
         self.init_explain_input(function_to_test=self.function_data.function)
         explanation = load_file_from_saved_files_dir(saved_dir=saved_dir, file_name="explain", ext="txt")
