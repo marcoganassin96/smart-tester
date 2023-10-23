@@ -1,5 +1,6 @@
 # imports needed to run the code in this notebook
 import ast  # used for detecting whether generated Python code is valid
+import json
 import os
 import time
 
@@ -216,17 +217,21 @@ def unit_tests_from_function(
         raise Exception("continue_from_step must be <= 6")
 
     save_dir = None
+
+    # Step 0: Start and optionally save function to test
+
     if continue_from_step == 0:
         # if we are continuing from step 0, we need initialize the data with the function to test
-        multi_prompt_data.init_function_input(function_to_test, programming_language, unit_test_package)
 
-        # Step 0: Start and optionally save function to test
+        function_name = function_to_test.split("def ")[1].split("(")[0]
+        if " " in function_name:
+            function_name = function_name.split(" ")[0]
+        if function_name is None or len(function_name) < 1:
+            function_name = "unknown_function"
+
+        multi_prompt_data.init_function_input(function_to_test, function_name, programming_language, unit_test_package)
+
         if save_text:
-            function_name = function_to_test.split("def ")[1].split("(")[0]
-            if " " in function_name:
-                function_name = function_name.split(" ")[0]
-            if function_name is None or len(function_name) < 1:
-                function_name = "unknown_function"
             save_dir = f"{int(time.time() * 1000)}-{function_name}"
             try:
                 file_path = PATH_saved_files / save_dir
@@ -234,6 +239,15 @@ def unit_tests_from_function(
             except OSError:
                 raise Exception(f"{file_path} already exists. Check for errors, delete it and try again.")
             save_text_in_saved_files_dir("function", save_dir, function_to_test)
+
+            function_metadata = {
+                "function_name": function_name,
+                "programming_language": programming_language,
+                "unit_test_package": unit_test_package
+            }
+            function_metadata_json = json.dumps(function_metadata)
+            save_text_in_saved_files_dir("function_metadata", save_dir, function_metadata_json, ext="json")
+
     else:
         save_dir = source_data_dir
 
@@ -331,6 +345,6 @@ def unit_tests_from_function(
                     reruns_if_fail=reruns_if_fail - 1,  # decrement rerun counter when calling again
                     continue_from_step=continue_from_step
                 )
-
-    raise Exception(f"""Cannot generate a valid unit test for the current function after {reruns_if_fail} attempts.
+    function_data: FunctionData = multi_prompt_data.get_function_data()
+    raise Exception(f"""Cannot generate a valid unit test for the current function {function_data.function_name} after {reruns_if_fail} attempts.
     Check the partial results in the directory {save_dir}.""")

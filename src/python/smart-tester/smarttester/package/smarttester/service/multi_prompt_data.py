@@ -1,3 +1,5 @@
+import json
+
 from smarttester.service.dataclass.elaboration_data import ElaborationData
 from smarttester.service.dataclass.execution_data import ExecutionData
 from smarttester.service.dataclass.function_data import FunctionData
@@ -18,9 +20,10 @@ class MultiPromptData:
 
     # Function data
 
-    def init_function_input(self, function_to_test: str, programming_language: str = "python",
+    def init_function_input(self, function_to_test: str, function_name: str = "Unknown", programming_language: str = "python",
                             unit_test_package: str = "pytest"):
         self.function_data.function = function_to_test
+        self.function_data.function_name = function_name
         self.function_data.programming_language = programming_language
         self.function_data.unit_test_package = unit_test_package
 
@@ -162,6 +165,11 @@ class MultiPromptData:
     def load_function_data(self, saved_dir: str) -> FunctionData:
         function = load_file_from_saved_files_dir(saved_dir=saved_dir, file_name="function", ext="txt")
         self.function_data.function = function
+        function_metadata_json = load_file_from_saved_files_dir(saved_dir=saved_dir, file_name="function_metadata", ext="json")
+        function_metadata = json.loads(function_metadata_json)
+        self.function_data.function_name = function_metadata["function_name"]
+        self.function_data.programming_language = function_metadata["programming_language"]
+        self.function_data.unit_test_package = function_metadata["unit_test_package"]
         return self.function_data
 
     def load_explain_data(self, saved_dir: str) -> ExplainData:
