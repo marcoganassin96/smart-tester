@@ -8,7 +8,7 @@ if __name__ == "__main__":
 
     unit_tests = unit_tests_from_function(
         sum_function,
-        approx_min_cases_to_cover=10,
+        approx_min_cases_to_cover=20,
         print_text=True,
         continue_from_step=0
     )

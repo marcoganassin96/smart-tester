@@ -1,0 +1,21 @@
+- Scenario: Positive numbers
+  - Example: `sum(3, 5)` should return `8`
+  - Example: `sum(10, 20)` should return `30`
+- Scenario: Negative numbers
+  - Example: `sum(-3, -5)` should return `-8`
+  - Example: `sum(-10, -20)` should return `-30`
+- Scenario: Zero
+  - Example: `sum(0, 0)` should return `0`
+  - Example: `sum(0, 10)` should return `10`
+- Scenario: Mixed positive and negative numbers
+  - Example: `sum(-3, 5)` should return `2`
+  - Example: `sum(10, -20)` should return `-10`
+- Scenario: Large numbers
+  - Example: `sum(1000000, 2000000)` should return `3000000`
+  - Example: `sum(999999999, 1)` should return `1000000000`
+- Scenario: One of the inputs is not an integer
+  - Example: `sum(3, 5.5)` should raise a `TypeError`
+  - Example: `sum(10, "20")` should raise a `TypeError`
+- Scenario: Missing one or both inputs
+  - Example: `sum(3)` should raise a `TypeError`
+  - Example: `sum()` should raise a `TypeError`

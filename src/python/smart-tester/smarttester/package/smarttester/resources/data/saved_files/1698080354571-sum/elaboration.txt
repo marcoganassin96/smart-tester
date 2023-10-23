@@ -1,0 +1,15 @@
+- Edge Case: Large negative numbers
+  - Example: `sum(-1000000, -2000000)` should return `-3000000`
+  - Example: `sum(-999999999, -1)` should return `-1000000000`
+- Edge Case: Overflow
+  - Example: `sum(9223372036854775807, 1)` should raise an `OverflowError`
+  - Example: `sum(-9223372036854775808, -1)` should raise an `OverflowError`
+- Edge Case: Very small numbers
+  - Example: `sum(0.000001, 0.000002)` should return `0.000003`
+  - Example: `sum(-0.000001, -0.000002)` should return `-0.000003`
+- Edge Case: One input is zero and the other is a non-integer
+  - Example: `sum(0, 5.5)` should raise a `TypeError`
+  - Example: `sum(10.5, 0)` should raise a `TypeError`
+- Edge Case: One input is a string representation of an integer
+  - Example: `sum(3, "5")` should raise a `TypeError`
+  - Example: `sum("10", 20)` should raise a `TypeError`
