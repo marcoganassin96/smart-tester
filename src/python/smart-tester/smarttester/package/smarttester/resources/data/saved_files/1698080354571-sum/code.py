@@ -6,31 +6,31 @@ def sum(a: int, b: int) -> int:
     return a + b
 
 # unit tests
-@pytest.mark.parametrize(
-    "a, b, expected_result", 
-    [
-        # Positive numbers
-        (3, 5, 8),
-        (10, 20, 30),
-        # Negative numbers
-        (-3, -5, -8),
-        (-10, -20, -30),
-        # Zero
-        (0, 0, 0),
-        (0, 10, 10),
-        # Mixed positive and negative numbers
-        (-3, 5, 2),
-        (10, -20, -10),
-        # Large numbers
-        (1000000, 2000000, 3000000),
-        (999999999, 1, 1000000000),
-        # One of the inputs is not an integer
-        pytest.param(3, 5.5, marks=pytest.mark.raises(exception=TypeError)),
-        pytest.param(10, "20", marks=pytest.mark.raises(exception=TypeError)),
-        # Missing one or both inputs
-        pytest.param(3, marks=pytest.mark.raises(exception=TypeError)),
-        pytest.param(b=5, marks=pytest.mark.raises(exception=TypeError)),
-    ]
-)
-def test_sum(a, b, expected_result):
-    assert sum(a, b) == expected_result
+@pytest.mark.parametrize("a, b, expected", [
+    (2, 3, 5),  # Basic addition
+    (0, 0, 0),
+    (-5, 5, 0),
+    (1000000, 2000000, 3000000),  # Large numbers
+    (999999999, 1, 1000000000),
+    (-10, -5, -15),  # Negative numbers
+    (-100, 100, 0),
+    (0, 10, 10),  # Zero as one of the inputs
+    (100, 0, 100),
+    (2.5, 3, TypeError),  # Type checking
+    ("2", 3, TypeError),
+    (-1000000, -2000000, -3000000),  # Large negative numbers
+    (-999999999, -1, -1000000000),
+    (-1000000, 2000000, 1000000),  # Large positive and negative numbers
+    (999999999, -1, 999999998),
+    (0, 0, 0),  # Zero as both inputs
+    (0, 1000000, 1000000),  # Large numbers with zero
+    (-1000000, 0, -1000000),
+    (0, -1000000, -1000000),
+    (1000000, 0, 1000000),
+])
+def test_sum(a, b, expected):
+    if isinstance(expected, type) and issubclass(expected, Exception):
+        with pytest.raises(expected):
+            sum(a, b)
+    else:
+        assert sum(a, b) == expected
