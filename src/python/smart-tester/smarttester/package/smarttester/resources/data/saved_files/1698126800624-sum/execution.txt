@@ -8,44 +8,38 @@ def sum(a: int, b: int) -> int:
 
 # unit tests
 @pytest.mark.parametrize("a, b, expected", [
-    # Basic scenarios
-    (3, 4, 7),
-    (5, 0, 5),
-    (-2, -3, -5),
-    # Large numbers
-    (1000000, 2000000, 3000000),
-    (999999, 0, 999999),
-    (-1000000, -2000000, -3000000),
-    # Edge cases
+    (3, 5, 8),  # positive integers
+    (10, 20, 30),
+    (-3, -5, -8),  # negative integers
+    (-10, -20, -30),
+    (0, 5, 5),  # zero
+    (10, 0, 10),
     (0, 0, 0),
-    (5, -5, 0),
-    (-7, 7, 0),
-    # Type checking
-    pytest.param(3.5, 4.2, None, marks=pytest.mark.xfail(raises=TypeError)),
-    pytest.param("2", 3, None, marks=pytest.mark.xfail(raises=TypeError)),
-    # Overflow
-    pytest.param(2**31, 2**31, None, marks=pytest.mark.xfail(raises=OverflowError)),
-    pytest.param(-2**31, -2**31, None, marks=pytest.mark.xfail(raises=OverflowError)),
-    # Different integer types
-    (5, 3, 8),
-    (5, 3, 8),
-    # Non-integer inputs
-    pytest.param(3.5, 4.2, None, marks=pytest.mark.xfail(raises=TypeError)),
-    pytest.param("2", 3.5, None, marks=pytest.mark.xfail(raises=TypeError)),
-    # Unusual numeric representations
-    ("0x10", "0x20", 48),
-    ("0b101", "0b110", 11),
+    (1000000, 2000000, 3000000),  # large integers
+    (999999999, 1, 1000000000),
+    (5, None, TypeError),  # missing argument
+    (None, None, TypeError),
+    (3.5, 2, TypeError),  # non-integer argument
+    ("hello", 5, TypeError),
+    (9223372036854775807, 1, 9223372036854775808),  # large integers exceeding maximum value
+    (999999999999999999999999, 1, 1000000000000000000000000),
+    (-9223372036854775808, -1, -9223372036854775809),  # small integers exceeding minimum value
+    (-999999999999999999999999, -1, -1000000000000000000000000),
+    (9223372036854775807, 2, OverflowError),  # sum exceeding maximum value
+    (-9223372036854775808, -2, OverflowError),  # sum below minimum value
+    (3, 2.5, TypeError),  # sum resulting in float
+    (2.5, 3.5, TypeError)
 ])
 def test_sum(a, b, expected):
-    assert sum(a, b) == expected
+    if expected == TypeError:
+        with pytest.raises(TypeError):
+            sum(a, b)
+    elif expected == OverflowError:
+        with pytest.raises(OverflowError):
+            sum(a, b)
+    else:
+        assert sum(a, b) == expected
 ```
-In the above code, we have written a suite of unit tests for the `sum` function using `pytest`. Here's a breakdown of the code:
+In the code above, we import the `pytest` package and define the `sum` function to be tested. The unit tests are defined using the `@pytest.mark.parametrize` decorator, which allows us to define multiple test cases with different input values and expected outcomes. Each test case is represented by a tuple containing the input values `a` and `b`, as well as the expected outcome `expected`.
 
-- We import the necessary packages, including `pytest`.
-- The `sum` function is defined as provided in the question.
-- The unit tests are defined using the `@pytest.mark.parametrize` decorator. Each test case is represented by a tuple containing the input values `a` and `b`, as well as the expected output `expected`.
-- The test cases cover the basic scenarios, large numbers, edge cases, type checking, overflow, different integer types, non-integer inputs, and unusual numeric representations.
-- For the test cases that are expected to raise an exception, we use `pytest.mark.xfail` to mark them as expected failures and specify the expected exception type using the `raises` parameter.
-- The `test_sum` function asserts that the result of calling the `sum` function with the input values `a` and `b` matches the expected output `expected`.
-
-By running these unit tests, we can verify that the `sum` function behaves correctly for a wide range of inputs and handles the specified scenarios, including edge cases and unexpected behavior.
+Inside the `test_sum` function, we use conditional statements to handle the special cases where the expected outcome is a `TypeError` or `OverflowError`. For these cases, we use `pytest.raises` to assert that the function call raises the expected exception. For all other cases, we use `assert` to compare the actual result of the function call with the expected outcome.

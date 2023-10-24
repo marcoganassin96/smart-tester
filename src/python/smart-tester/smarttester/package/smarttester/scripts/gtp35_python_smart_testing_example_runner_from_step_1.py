@@ -11,5 +11,5 @@ if __name__ == "__main__":
         approx_min_cases_to_cover=20,
         print_text=True,
         continue_from_step=1,
-        source_data_dir="1698080354571-sum"
+        source_data_dir="1698126800624-sum"
     )

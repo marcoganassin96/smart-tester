@@ -1,25 +1,21 @@
-To help unit test the `sum` function, here are diverse scenarios that the function should be able to handle:
+- The function should be able to handle positive integers:
+    - Example: `sum(3, 5)` should return `8`
+    - Example: `sum(10, 20)` should return `30`
+- The function should be able to handle negative integers:
+    - Example: `sum(-3, -5)` should return `-8`
+    - Example: `sum(-10, -20)` should return `-30`
+- The function should be able to handle zero:
+    - Example: `sum(0, 5)` should return `5`
+    - Example: `sum(10, 0)` should return `10`
+    - Example: `sum(0, 0)` should return `0`
+- The function should be able to handle large integers:
+    - Example: `sum(1000000, 2000000)` should return `3000000`
+    - Example: `sum(999999999, 1)` should return `1000000000`
+- The function should be able to handle the case where one of the inputs is missing:
+    - Example: `sum(5)` should raise a `TypeError` since the second argument is missing
+    - Example: `sum()` should raise a `TypeError` since both arguments are missing
+- The function should be able to handle non-integer inputs:
+    - Example: `sum(3.5, 2)` should raise a `TypeError` since the first argument is a float
+    - Example: `sum('hello', 5)` should raise a `TypeError` since the first argument is a string
 
-1. Basic scenarios:
-   - Sum of two positive integers: `sum(3, 4)` should return `7`
-   - Sum of a positive integer and zero: `sum(5, 0)` should return `5`
-   - Sum of two negative integers: `sum(-2, -3)` should return `-5`
-
-2. Large numbers:
-   - Sum of two large positive integers: `sum(1000000, 2000000)` should return `3000000`
-   - Sum of a large positive integer and zero: `sum(999999, 0)` should return `999999`
-   - Sum of two large negative integers: `sum(-1000000, -2000000)` should return `-3000000`
-
-3. Edge cases:
-   - Sum of two zeros: `sum(0, 0)` should return `0`
-   - Sum of a positive integer and its negative counterpart: `sum(5, -5)` should return `0`
-   - Sum of a negative integer and its positive counterpart: `sum(-7, 7)` should return `0`
-
-4. Type checking:
-   - Sum of two floating-point numbers: `sum(3.5, 4.2)` should raise a `TypeError`
-   - Sum of a string and an integer: `sum("2", 3)` should raise a `TypeError`
-
-5. Performance:
-   - Sum of two very large positive integers: Test the performance of the function by measuring the time it takes to compute the sum of two large numbers, such as `sum(10**100, 10**100)`.
-
-By testing these diverse scenarios, we can ensure that the `sum` function behaves correctly and handles a wide range of inputs, including edge cases and unexpected types.
+By covering these diverse scenarios, we can ensure that the function is robust and handles a wide range of inputs correctly.
