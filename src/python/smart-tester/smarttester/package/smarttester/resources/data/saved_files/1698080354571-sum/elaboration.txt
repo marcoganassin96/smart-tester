@@ -1,0 +1,13 @@
+- Edge case: One or both arguments are not integers
+  - Example: `sum(2.5, 3)` should raise a `TypeError`
+  - Example: `sum("2", 3)` should raise a `TypeError`
+- Edge case: Overflow
+  - Example: `sum(999999999999999999999999999999999, 1)` should raise an `OverflowError`
+  - Example: `sum(9223372036854775807, 1)` should raise an `OverflowError` (maximum value for `int` on most systems)
+- Edge case: Arguments are `None`
+  - Example: `sum(None, 3)` should raise a `TypeError`
+  - Example: `sum(None, None)` should raise a `TypeError`
+- Edge case: Arguments are not provided
+  - Example: `sum()` should raise a `TypeError`
+- Edge case: Arguments are not positional
+  - Example: `sum(b=3, a=2)` should return `5` (arguments are passed by name, so the order does not matter)

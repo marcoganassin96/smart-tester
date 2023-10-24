@@ -1,0 +1,39 @@
+- Scenario 1: Basic addition
+  - Example 1: `sum(2, 3)` should return `5`
+  - Example 2: `sum(0, 0)` should return `0`
+  - Example 3: `sum(-5, 5)` should return `0`
+
+- Scenario 2: Large numbers
+  - Example 1: `sum(1000000, 2000000)` should return `3000000`
+  - Example 2: `sum(999999999, 1)` should return `1000000000`
+
+- Scenario 3: Negative numbers
+  - Example 1: `sum(-10, -5)` should return `-15`
+  - Example 2: `sum(-100, 100)` should return `0`
+
+- Scenario 4: Zero as one of the inputs
+  - Example 1: `sum(0, 10)` should return `10`
+  - Example 2: `sum(100, 0)` should return `100`
+
+- Scenario 5: Type checking
+  - Example 1: `sum(2.5, 3)` should raise a `TypeError` since one of the inputs is a float instead of an integer
+  - Example 2: `sum("2", 3)` should raise a `TypeError` since one of the inputs is a string instead of an integer
+
+- Scenario 6: Large negative numbers
+  - Example 1: `sum(-1000000, -2000000)` should return `-3000000`
+  - Example 2: `sum(-999999999, -1)` should return `-1000000000`
+
+- Scenario 7: Large positive and negative numbers
+  - Example 1: `sum(-1000000, 2000000)` should return `1000000`
+  - Example 2: `sum(999999999, -1)` should return `999999998`
+
+- Scenario 8: Zero as both inputs
+  - Example 1: `sum(0, 0)` should return `0`
+
+- Scenario 9: Large numbers with zero
+  - Example 1: `sum(0, 1000000)` should return `1000000`
+  - Example 2: `sum(-1000000, 0)` should return `-1000000`
+
+- Scenario 10: Large negative numbers with zero
+  - Example 1: `sum(0, -1000000)` should return `-1000000`
+  - Example 2: `sum(1000000, 0)` should return `1000000`
