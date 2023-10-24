@@ -1,0 +1,45 @@
+```python
+# imports
+import pytest
+
+# function to test
+def sum(a: int, b: int) -> int:
+    return a + b
+
+# unit tests
+@pytest.mark.parametrize("a, b, expected", [
+    (3, 5, 8),  # positive integers
+    (10, 20, 30),
+    (-3, -5, -8),  # negative integers
+    (-10, -20, -30),
+    (0, 5, 5),  # zero
+    (10, 0, 10),
+    (0, 0, 0),
+    (1000000, 2000000, 3000000),  # large integers
+    (999999999, 1, 1000000000),
+    (5, None, TypeError),  # missing argument
+    (None, None, TypeError),
+    (3.5, 2, TypeError),  # non-integer argument
+    ("hello", 5, TypeError),
+    (9223372036854775807, 1, 9223372036854775808),  # large integers exceeding maximum value
+    (999999999999999999999999, 1, 1000000000000000000000000),
+    (-9223372036854775808, -1, -9223372036854775809),  # small integers exceeding minimum value
+    (-999999999999999999999999, -1, -1000000000000000000000000),
+    (9223372036854775807, 2, OverflowError),  # sum exceeding maximum value
+    (-9223372036854775808, -2, OverflowError),  # sum below minimum value
+    (3, 2.5, TypeError),  # sum resulting in float
+    (2.5, 3.5, TypeError)
+])
+def test_sum(a, b, expected):
+    if expected == TypeError:
+        with pytest.raises(TypeError):
+            sum(a, b)
+    elif expected == OverflowError:
+        with pytest.raises(OverflowError):
+            sum(a, b)
+    else:
+        assert sum(a, b) == expected
+```
+In the code above, we import the `pytest` package and define the `sum` function to be tested. The unit tests are defined using the `@pytest.mark.parametrize` decorator, which allows us to define multiple test cases with different input values and expected outcomes. Each test case is represented by a tuple containing the input values `a` and `b`, as well as the expected outcome `expected`.
+
+Inside the `test_sum` function, we use conditional statements to handle the special cases where the expected outcome is a `TypeError` or `OverflowError`. For these cases, we use `pytest.raises` to assert that the function call raises the expected exception. For all other cases, we use `assert` to compare the actual result of the function call with the expected outcome.

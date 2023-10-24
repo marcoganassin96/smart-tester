@@ -1,0 +1,15 @@
+- The function should be able to handle very large integers that may exceed the maximum value that can be represented:
+    - Example: `sum(9223372036854775807, 1)` should return `9223372036854775808` (the maximum value that can be represented by a 64-bit signed integer)
+    - Example: `sum(999999999999999999999999, 1)` should return `1000000000000000000000000`
+- The function should be able to handle very small integers that may exceed the minimum value that can be represented:
+    - Example: `sum(-9223372036854775808, -1)` should return `-9223372036854775809` (the minimum value that can be represented by a 64-bit signed integer)
+    - Example: `sum(-999999999999999999999999, -1)` should return `-1000000000000000000000000`
+- The function should be able to handle cases where the sum exceeds the maximum value that can be represented:
+    - Example: `sum(9223372036854775807, 2)` should raise an `OverflowError` since the sum exceeds the maximum value that can be represented by a 64-bit signed integer
+- The function should be able to handle cases where the sum is below the minimum value that can be represented:
+    - Example: `sum(-9223372036854775808, -2)` should raise an `OverflowError` since the sum is below the minimum value that can be represented by a 64-bit signed integer
+- The function should be able to handle cases where the sum results in a floating-point number:
+    - Example: `sum(3, 2.5)` should raise a `TypeError` since the sum is a float
+    - Example: `sum(2.5, 3.5)` should raise a `TypeError` since both arguments are floats
+
+By considering these rare or unexpected edge cases, we can ensure that the function handles unusual inputs gracefully and does not produce unexpected results or errors.

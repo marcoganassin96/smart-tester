@@ -1,0 +1,36 @@
+# imports
+import pytest
+
+# function to test
+def sum(a: int, b: int) -> int:
+    return a + b
+
+# unit tests
+@pytest.mark.parametrize("a, b, expected", [
+    (2, 3, 5),  # Basic addition
+    (0, 0, 0),
+    (-5, 5, 0),
+    (1000000, 2000000, 3000000),  # Large numbers
+    (999999999, 1, 1000000000),
+    (-10, -5, -15),  # Negative numbers
+    (-100, 100, 0),
+    (0, 10, 10),  # Zero as one of the inputs
+    (100, 0, 100),
+    (2.5, 3, TypeError),  # Type checking
+    ("2", 3, TypeError),
+    (-1000000, -2000000, -3000000),  # Large negative numbers
+    (-999999999, -1, -1000000000),
+    (-1000000, 2000000, 1000000),  # Large positive and negative numbers
+    (999999999, -1, 999999998),
+    (0, 0, 0),  # Zero as both inputs
+    (0, 1000000, 1000000),  # Large numbers with zero
+    (-1000000, 0, -1000000),
+    (0, -1000000, -1000000),
+    (1000000, 0, 1000000),
+])
+def test_sum(a, b, expected):
+    if isinstance(expected, type) and issubclass(expected, Exception):
+        with pytest.raises(expected):
+            sum(a, b)
+    else:
+        assert sum(a, b) == expected
