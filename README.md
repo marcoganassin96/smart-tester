@@ -1,4 +1,4 @@
-Smart Tester
+# Smart Tester
 
 ![alt text](https://github.com/marcoganassin96/smart-tester/blob/update/readme/assets/bugs_hunter.png)
 
