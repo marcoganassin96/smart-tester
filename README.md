@@ -75,6 +75,51 @@ uv run pytest
 uv pip install -e .
 ```
 
+### PyCharm IDE Setup
+
+For PyCharm users, follow these steps to properly configure the project with the uv-managed virtual environment:
+
+#### 1. Initial Project Setup
+```bash
+# Clone and setup the project
+git clone https://github.com/marcoganassin96/smart-tester.git
+cd smart-tester
+
+# Create virtual environment and install dependencies
+uv sync
+```
+
+#### 2. Configure PyCharm Interpreter
+1. **Open PyCharm** and open the `smart-tester` project folder
+2. **Configure Python Interpreter**:
+   - Go to `File` → `Settings` (or `PyCharm` → `Preferences` on macOS)
+   - Navigate to `Project: smart-tester` → `Python Interpreter`
+   - Click the gear icon ⚙️ → `Add...`
+   - Select `Existing Environment`
+   - Set the interpreter path to: `<project-root>/.venv/bin/python` (Linux/macOS) or `<project-root>/.venv/Scripts/python.exe` (Windows)
+   - Click `OK` to confirm
+
+#### 3. Verify Setup
+- **Check Dependencies**: The interpreter should show all installed packages from `pyproject.toml`
+- **Test Import**: Create a test file and try importing: `from smarttester.service.multi_prompt_python_smart_tester import explain_tests_from_function`
+- **Run Configuration**: Set up run configurations to use the uv environment
+
+#### 4. Environment Variables
+- Go to `Run` → `Edit Configurations...`
+- Add environment variable: `OPENAI_API_KEY=your_api_key_here`
+- This ensures your API key is available when running scripts from PyCharm
+
+#### 5. Running Tests in PyCharm
+- **Right-click** on the `tests` folder → `Run 'pytest in tests'`
+- Or use the terminal within PyCharm: `uv run pytest`
+
+#### 6. Development Workflow
+- **Install new dependencies**: Use `uv add package_name` in the PyCharm terminal
+- **Update dependencies**: Use `uv sync` to sync changes
+- **Run scripts**: Use `uv run python script_name.py` or configure run configurations with the uv interpreter
+
+> **Note**: PyCharm will automatically detect the virtual environment created by uv in the `.venv` folder. If you encounter any issues, ensure the interpreter path points to the correct Python executable within the `.venv` directory.
+
 ### In-progress functionalities:
 - Automated post-processing to fix usual LLM's specific errors in generating pytest tests
 - Exposition of API to call pytest test generation services from a client
