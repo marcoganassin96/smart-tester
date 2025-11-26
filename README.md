@@ -24,12 +24,41 @@ In this project 2 additional steps are structured:
 ### How to use:
 1. Clone/fork the project
 2. Open the project using your favorite SDK (PyCharm, Visual Studio Code, ...)
-3. Set the environment variable "OPENAI_API_KEY" to link your OpenAI API Key (https://platform.openai.com/account/api-keys)  
-4. Execute the main function from _smarttester\scripts\gtp35_python_smart_testing_example_runner.py_, using the desired function_to_tests and parameters, as follows in this screenshot
+3. Install the proper virtual environment with proper dependencies with uv (see below in "[Setup with uv (Recommended)](#setup-with-uv-recommended)") 
+4. Set the environment variable "OPENAI_API_KEY" to link your OpenAI API Key (https://platform.openai.com/account/api-keys)  
+5. Execute the main function from _smarttester\scripts\gtp35_python_smart_testing_example_runner.py_, using the desired function_to_tests and parameters, as follows in this screenshot
 ![alt text](https://github.com/marcoganassin96/smart-tester/blob/update/readme/assets/gtp35_python_smart_testing_example_runner.png)
-5. If parameter "_print_text_" is set as _True_, results are printed in the terminal:
+6. If parameter "_print_text_" is set as _True_, results are printed in the terminal:
 ![alt text](https://github.com/marcoganassin96/smart-tester/blob/update/readme/assets/example_generated_code_in_terminal.png)
-6. If parameter "_save_text_" is set as _True_, results and intermediate steps are saved as files in __smarttester\package\smarttester\resources\data\saved_files_
+7. If parameter "_save_text_" is set as _True_, results and intermediate steps are saved as files in __smarttester\package\smarttester\resources\data\saved_files_
+
+
+#### Setup with uv (Recommended)
+1. Clone/fork the project
+2. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager (from bash):
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+3. Follow the instructions below based on your OS:
+3A. For Windows (MINGW64/Git Bash):
+```bash
+cd smart-tester
+
+# Ensure uv is in PATH (if using MINGW64)
+export PATH="/c/Users/{your-username}/.local/bin:$PATH"
+
+# Create virtual environment and install dependencies
+uv sync
+```
+
+3B. For Linux/macOS or Windows PowerShell:
+```bash
+cd smart-tester
+
+# Create virtual environment and install dependencies
+uv sync
+```
+
 
 ### In-progress functionalities:
 - Automated post-processing to fix usual LLM's specific errors in generating pytest tests
