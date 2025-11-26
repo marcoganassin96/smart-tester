@@ -291,78 +291,50 @@ def unit_tests_from_function(
 
     if continue_from_step <= 1:
         # Step 1: Generate an explanation of the function
-
-        if continue_from_step == 1:
-            # if we are continuing from step 1, we need to load the data from the saved files
-            multi_prompt_data.load_function_data(save_dir)
-            multi_prompt_data.load_multi_step_data(save_dir)
+        _load_data_for_step(multi_prompt_data, continue_from_step, 1, save_dir)
 
         explanation = explain_tests_from_function(multi_prompt_data, print_text, explain_model, temperature)
-
-        if save_text:
-            save_text_in_saved_files_dir("explain", save_dir, explanation)
+        _save_text_if_needed(save_text, "explain", save_dir, explanation)
 
     if continue_from_step <= 2:
         # Step 2: Generate a plan to write a unit test
-
-        if continue_from_step == 2:
-            # if we are continuing from step 2, we need to load the data from the saved files
-            multi_prompt_data.load_explain_data(save_dir)
+        _load_data_for_step(multi_prompt_data, continue_from_step, 2, save_dir)
             
         plan: str = plan_tests_from_explain(multi_prompt_data, print_text, plan_model, temperature)
-
-        if save_text:
-            save_text_in_saved_files_dir("plan", save_dir, plan)
+        _save_text_if_needed(save_text, "plan", save_dir, plan)
 
     if continue_from_step <= 3:
         # Step 2b: If the plan is short, ask GPT to elaborate further
-
-        if continue_from_step == 3:
-            multi_prompt_data.load_plan_data(save_dir)
+        _load_data_for_step(multi_prompt_data, continue_from_step, 3, save_dir)
 
         # this counts top-level bullets (e.g., categories), but not sub-bullets (e.g., test cases)
-
         plan = multi_prompt_data.get_plan_data().plan
         num_bullets = _get_bullets_number(plan)
         elaboration_needed = num_bullets < approx_min_cases_to_cover
 
         if elaboration_needed:
             elaboration = increase_plan_tests(multi_prompt_data, print_text, plan_model, temperature)
-
-            if save_text:
-                save_text_in_saved_files_dir("elaboration", save_dir, elaboration)
+            _save_text_if_needed(save_text, "elaboration", save_dir, elaboration)
 
     if continue_from_step <= 4:
-
         # Step 3: Generate the unit test
-
-        if continue_from_step == 4:
-            multi_prompt_data.load_elaboration_data(save_dir)
+        _load_data_for_step(multi_prompt_data, continue_from_step, 4, save_dir)
 
         execution = generate_tests_form_plan(multi_prompt_data, print_text,
                                              execute_model, temperature)
-
-        if save_text:
-            save_text_in_saved_files_dir("execution", save_dir, execution)
+        _save_text_if_needed(save_text, "execution", save_dir, execution)
 
     if continue_from_step <= 5:
         # Custom post-processing to fix errors
-
-        if continue_from_step == 5:
-            multi_prompt_data.load_execution_data(save_dir)
+        _load_data_for_step(multi_prompt_data, continue_from_step, 5, save_dir)
 
         code = post_process_execution_response(multi_prompt_data)
-
         multi_prompt_data.init_post_processing_output(code)
-
-        if save_text:
-            save_text_in_saved_files_dir("code", save_dir, code, "py")
+        _save_text_if_needed(save_text, "code", save_dir, code, "py")
 
     if continue_from_step <= 6:
         # retry if fails
-
-        if continue_from_step == 6:
-            multi_prompt_data.load_post_processing_data(save_dir)
+        _load_data_for_step(multi_prompt_data, continue_from_step, 6, save_dir)
         try:
             post_processing_data = multi_prompt_data.get_post_processing_data()
             ast.parse(post_processing_data.code)
