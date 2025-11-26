@@ -74,6 +74,32 @@ def _save_text_if_needed(save_text: bool, filename: str, save_dir: str, content:
         save_text_in_saved_files_dir(filename, save_dir, content, ext)
 
 
+def _load_data_for_step(multi_prompt_data: MultiPromptData, continue_from_step: int, current_step: int, save_dir: str) -> None:
+    """
+    Centralized function to load data from saved files based on the step being continued from.
+    
+    Args:
+        multi_prompt_data: The data structure to load into
+        continue_from_step: The step we're continuing from
+        current_step: The current step being executed
+        save_dir: Directory to load from
+    """
+    if continue_from_step == current_step:
+        if current_step == 1:
+            multi_prompt_data.load_function_data(save_dir)
+            multi_prompt_data.load_multi_step_data(save_dir)
+        elif current_step == 2:
+            multi_prompt_data.load_explain_data(save_dir)
+        elif current_step == 3:
+            multi_prompt_data.load_plan_data(save_dir)
+        elif current_step == 4:
+            multi_prompt_data.load_elaboration_data(save_dir)
+        elif current_step == 5:
+            multi_prompt_data.load_execution_data(save_dir)
+        elif current_step == 6:
+            multi_prompt_data.load_post_processing_data(save_dir)
+
+
 def explain_tests_from_function(
         multi_prompt_data: MultiPromptData,  # input and output data structure
         print_text: bool = False,  # optionally prints text; helpful for understanding the function & debugging
