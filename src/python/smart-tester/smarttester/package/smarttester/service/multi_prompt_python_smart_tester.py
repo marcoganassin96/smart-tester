@@ -3,6 +3,7 @@ import ast  # used for detecting whether generated Python code is valid
 import json
 import os
 import time
+from typing import List, Dict, Any
 
 import openai  # used for calling the OpenAI API
 
@@ -20,6 +21,42 @@ from smarttester.utils.messages_printer import print_messages, print_message_del
 from smarttester.utils.text_utils import _get_bullets_number
 
 from smarttester.utils.save_text import save_text_in_saved_files_dir
+
+
+def _call_openai_streaming(
+    messages: List[Dict[str, Any]], 
+    model: str, 
+    temperature: float, 
+    print_text: bool = False
+) -> str:
+    """
+    Centralized function to handle OpenAI API calls with streaming response processing.
+    
+    Args:
+        messages: List of message dictionaries for the API call
+        model: Model name to use
+        temperature: Temperature parameter for the API call
+        print_text: Whether to print the response as it streams
+        
+    Returns:
+        Complete response text as string
+    """
+    response = openai.ChatCompletion.create(
+        model=model,
+        messages=messages,
+        temperature=temperature,
+        stream=True,
+    )
+    
+    result = ""
+    for chunk in response:
+        delta = chunk["choices"][0]["delta"]
+        if print_text:
+            print_message_delta(delta)
+        if "content" in delta:
+            result += delta["content"]
+    
+    return result
 
 
 def explain_tests_from_function(
