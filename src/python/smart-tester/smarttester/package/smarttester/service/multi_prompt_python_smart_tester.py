@@ -59,6 +59,21 @@ def _call_openai_streaming(
     return result
 
 
+def _save_text_if_needed(save_text: bool, filename: str, save_dir: str, content: str, ext: str = "txt") -> None:
+    """
+    Centralized function to conditionally save text to files.
+    
+    Args:
+        save_text: Whether to save the text
+        filename: Name of the file (without extension)
+        save_dir: Directory to save in
+        content: Content to save
+        ext: File extension (default: "txt")
+    """
+    if save_text:
+        save_text_in_saved_files_dir(filename, save_dir, content, ext)
+
+
 def explain_tests_from_function(
         multi_prompt_data: MultiPromptData,  # input and output data structure
         print_text: bool = False,  # optionally prints text; helpful for understanding the function & debugging
