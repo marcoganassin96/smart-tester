@@ -22,100 +22,26 @@ In this project 2 additional steps are structured:
 - Saved intermediate steps in persistent files to review step outputs and restart computation from an intermediate step 
 
 ### How to use:
+1. Clone/fork the project
+2. Open the project using your favorite SDK (PyCharm, Visual Studio Code, ...)
+3. Install the proper virtual environment with proper dependencies with uv (see below in "[Setup with uv (Recommended)](#setup-with-uv-recommended)") 
+4. Set the environment variable "OPENAI_API_KEY" to link your OpenAI API Key (https://platform.openai.com/account/api-keys)  
+5. Execute the main function from _smarttester\scripts\gtp35_python_smart_testing_example_runner.py_, using the desired function_to_tests and parameters, as follows in this screenshot
+![alt text](https://github.com/marcoganassin96/smart-tester/blob/update/readme/assets/gtp35_python_smart_testing_example_runner.png)
+6. If parameter "_print_text_" is set as _True_, results are printed in the terminal:
+![alt text](https://github.com/marcoganassin96/smart-tester/blob/update/readme/assets/example_generated_code_in_terminal.png)
+7. If parameter "_save_text_" is set as _True_, results and intermediate steps are saved as files in __smarttester\package\smarttester\resources\data\saved_files_
+
 
 #### Setup with uv (Recommended)
 1. Clone/fork the project
-2. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager:
+2. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager (from bash):
    ```bash
    curl -LsSf https://astral.sh/uv/install.sh | sh
    ```
-3. Create and activate virtual environment with dependencies:
-   ```bash
-   cd smart-tester
-   uv sync
-   ```
-4. Set the environment variable "OPENAI_API_KEY":
-   ```bash
-   export OPENAI_API_KEY="your-api-key-here"
-   ```
-5. Run the example:
-   ```bash
-   uv run python src/python/smart-tester/smarttester/scripts/gtp35_python_smart_testing_example_runner.py
-   ```
-
-#### Alternative Setup (Legacy)
-1. Clone/fork the project
-2. Open the project using your favorite SDK (PyCharm, Visual Studio Code, ...)
-3. Set the environment variable "OPENAI_API_KEY" to link your OpenAI API Key (https://platform.openai.com/account/api-keys)  
-4. Execute the main function from _smarttester\scripts\gtp35_python_smart_testing_example_runner.py_, using the desired function_to_tests and parameters, as follows in this screenshot
-![alt text](https://github.com/marcoganassin96/smart-tester/blob/update/readme/assets/gtp35_python_smart_testing_example_runner.png)
-5. If parameter "_print_text_" is set as _True_, results are printed in the terminal:
-![alt text](https://github.com/marcoganassin96/smart-tester/blob/update/readme/assets/example_generated_code_in_terminal.png)
-6. If parameter "_save_text_" is set as _True_, results and intermediate steps are saved as files in __smarttester\package\smarttester\resources\data\saved_files_
-
-### Development Setup
-
-For contributors and developers:
-
+3. Follow the instructions below based on your OS:
+3A. For Windows (MINGW64/Git Bash):
 ```bash
-# Clone the repository
-git clone https://github.com/marcoganassin96/smart-tester.git
-cd smart-tester
-
-# Install uv if not already installed
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install all dependencies including dev/test dependencies
-uv sync --all-extras
-
-# Run tests
-uv run pytest
-
-# Install in editable mode for development
-uv pip install -e .
-```
-
-### Windows Setup (MINGW64/Git Bash)
-
-If you're using MINGW64 (Git Bash) on Windows, you may encounter a `uv: command not found` error after installation. This happens because the PATH isn't automatically updated in Unix-like environments on Windows.
-
-#### Fix for MINGW64/Git Bash:
-```bash
-# After installing uv, add it to your PATH for the current session
-export PATH="/c/Users/{your-username}/.local/bin:$PATH"
-
-# To make this permanent, add the export line to your shell configuration
-echo 'export PATH="/c/Users/{your-username}/.local/bin:$PATH"' >> ~/.bashrc
-
-# Reload your shell configuration
-source ~/.bashrc
-
-# Now uv should work
-uv --version
-```
-
-#### Alternative Windows Installation Methods:
-```powershell
-# Using PowerShell (recommended for Windows users)
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-
-# Using Scoop
-scoop install uv
-
-# Using Chocolatey
-choco install uv
-```
-
-### PyCharm IDE Setup
-
-For PyCharm users, follow these steps to properly configure the project with the uv-managed virtual environment:
-
-#### 1. Initial Project Setup
-
-**For Windows (MINGW64/Git Bash):**
-```bash
-# Clone and setup the project
-git clone https://github.com/marcoganassin96/smart-tester.git
 cd smart-tester
 
 # Ensure uv is in PATH (if using MINGW64)
@@ -125,73 +51,14 @@ export PATH="/c/Users/{your-username}/.local/bin:$PATH"
 uv sync
 ```
 
-**For Linux/macOS or Windows PowerShell:**
+3B. For Linux/macOS or Windows PowerShell:
 ```bash
-# Clone and setup the project
-git clone https://github.com/marcoganassin96/smart-tester.git
 cd smart-tester
 
 # Create virtual environment and install dependencies
 uv sync
 ```
 
-#### 2. Configure PyCharm Interpreter
-1. **Open PyCharm** and open the `smart-tester` project folder
-2. **Configure Python Interpreter**:
-   - Go to `File` → `Settings` (or `PyCharm` → `Preferences` on macOS)
-   - Navigate to `Project: smart-tester` → `Python Interpreter`
-   - Click the gear icon ⚙️ → `Add...`
-   - Select `Existing Environment`
-   - Set the interpreter path to: `<project-root>/.venv/bin/python` (Linux/macOS) or `<project-root>/.venv/Scripts/python.exe` (Windows)
-   - Click `OK` to confirm
-
-#### 3. Verify Setup
-- **Check Dependencies**: The interpreter should show all installed packages from `pyproject.toml`
-- **Test Import**: Create a test file and try importing: `from smarttester.service.multi_prompt_python_smart_tester import explain_tests_from_function`
-- **Run Configuration**: Set up run configurations to use the uv environment
-
-#### 4. Environment Variables
-- Go to `Run` → `Edit Configurations...`
-- Add environment variable: `OPENAI_API_KEY=your_api_key_here`
-- This ensures your API key is available when running scripts from PyCharm
-
-#### 5. Running Tests in PyCharm
-- **Right-click** on the `tests` folder → `Run 'pytest in tests'`
-- Or use the terminal within PyCharm: `uv run pytest`
-
-#### 6. Development Workflow
-- **Install new dependencies**: Use `uv add package_name` in the PyCharm terminal
-- **Update dependencies**: Use `uv sync` to sync changes
-- **Run scripts**: Use `uv run python script_name.py` or configure run configurations with the uv interpreter
-
-#### 7. Windows-Specific PyCharm Troubleshooting
-
-**Problem: `uv: command not found` in PyCharm terminal**
-- **Solution**: Configure PyCharm terminal to use the correct shell:
-  1. Go to `File` → `Settings` → `Tools` → `Terminal`
-  2. For **Shell path**, use one of:
-     - `C:\Program Files\Git\bin\bash.exe` (Git Bash)
-     - `powershell.exe` (PowerShell - recommended)
-     - `cmd.exe` (Command Prompt)
-  3. Add environment variable in terminal settings: `PATH=/c/Users/{your-username}/.local/bin:$PATH` (for Git Bash)
-
-**Problem: Virtual environment not detected**
-- **Solution**: Manually specify the interpreter path:
-  - Windows path: `D:\path\to\your\project\smart-tester\.venv\Scripts\python.exe`
-  - Ensure you're using the full absolute path to your project
-
-**Problem: Import errors in PyCharm**
-- **Solution**: Mark source directories:
-  1. Right-click on `src/python/smart-tester` → `Mark Directory as` → `Sources Root`
-  2. Ensure the interpreter is correctly set to the `.venv` Python executable
-
-**Problem: Tests not running in PyCharm**
-- **Solution**: Configure test runner:
-  1. Go to `File` → `Settings` → `Tools` → `Python Integrated Tools`
-  2. Set **Default test runner** to `pytest`
-  3. Set **Project root** to your project directory
-
-> **Note**: PyCharm will automatically detect the virtual environment created by uv in the `.venv` folder. If you encounter any issues, ensure the interpreter path points to the correct Python executable within the `.venv` directory.
 
 ### In-progress functionalities:
 - Automated post-processing to fix usual LLM's specific errors in generating pytest tests
