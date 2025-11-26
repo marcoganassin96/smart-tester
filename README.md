@@ -75,11 +75,57 @@ uv run pytest
 uv pip install -e .
 ```
 
+### Windows Setup (MINGW64/Git Bash)
+
+If you're using MINGW64 (Git Bash) on Windows, you may encounter a `uv: command not found` error after installation. This happens because the PATH isn't automatically updated in Unix-like environments on Windows.
+
+#### Fix for MINGW64/Git Bash:
+```bash
+# After installing uv, add it to your PATH for the current session
+export PATH="/c/Users/{your-username}/.local/bin:$PATH"
+
+# To make this permanent, add the export line to your shell configuration
+echo 'export PATH="/c/Users/{your-username}/.local/bin:$PATH"' >> ~/.bashrc
+
+# Reload your shell configuration
+source ~/.bashrc
+
+# Now uv should work
+uv --version
+```
+
+#### Alternative Windows Installation Methods:
+```powershell
+# Using PowerShell (recommended for Windows users)
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# Using Scoop
+scoop install uv
+
+# Using Chocolatey
+choco install uv
+```
+
 ### PyCharm IDE Setup
 
 For PyCharm users, follow these steps to properly configure the project with the uv-managed virtual environment:
 
 #### 1. Initial Project Setup
+
+**For Windows (MINGW64/Git Bash):**
+```bash
+# Clone and setup the project
+git clone https://github.com/marcoganassin96/smart-tester.git
+cd smart-tester
+
+# Ensure uv is in PATH (if using MINGW64)
+export PATH="/c/Users/{your-username}/.local/bin:$PATH"
+
+# Create virtual environment and install dependencies
+uv sync
+```
+
+**For Linux/macOS or Windows PowerShell:**
 ```bash
 # Clone and setup the project
 git clone https://github.com/marcoganassin96/smart-tester.git
@@ -117,6 +163,33 @@ uv sync
 - **Install new dependencies**: Use `uv add package_name` in the PyCharm terminal
 - **Update dependencies**: Use `uv sync` to sync changes
 - **Run scripts**: Use `uv run python script_name.py` or configure run configurations with the uv interpreter
+
+#### 7. Windows-Specific PyCharm Troubleshooting
+
+**Problem: `uv: command not found` in PyCharm terminal**
+- **Solution**: Configure PyCharm terminal to use the correct shell:
+  1. Go to `File` → `Settings` → `Tools` → `Terminal`
+  2. For **Shell path**, use one of:
+     - `C:\Program Files\Git\bin\bash.exe` (Git Bash)
+     - `powershell.exe` (PowerShell - recommended)
+     - `cmd.exe` (Command Prompt)
+  3. Add environment variable in terminal settings: `PATH=/c/Users/{your-username}/.local/bin:$PATH` (for Git Bash)
+
+**Problem: Virtual environment not detected**
+- **Solution**: Manually specify the interpreter path:
+  - Windows path: `D:\path\to\your\project\smart-tester\.venv\Scripts\python.exe`
+  - Ensure you're using the full absolute path to your project
+
+**Problem: Import errors in PyCharm**
+- **Solution**: Mark source directories:
+  1. Right-click on `src/python/smart-tester` → `Mark Directory as` → `Sources Root`
+  2. Ensure the interpreter is correctly set to the `.venv` Python executable
+
+**Problem: Tests not running in PyCharm**
+- **Solution**: Configure test runner:
+  1. Go to `File` → `Settings` → `Tools` → `Python Integrated Tools`
+  2. Set **Default test runner** to `pytest`
+  3. Set **Project root** to your project directory
 
 > **Note**: PyCharm will automatically detect the virtual environment created by uv in the `.venv` folder. If you encounter any issues, ensure the interpreter path points to the correct Python executable within the `.venv` directory.
 
