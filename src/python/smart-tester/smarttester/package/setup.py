@@ -11,16 +11,10 @@ def _get_resources(package_name):
     return [resource[resource.index("resources"):] for resource in all_resources]
 
 
-# Read requirements
-requirements_file = os.path.join(os.path.dirname(os.path.realpath(__file__)), "requirements.txt")
-with open(requirements_file, "r") as f:
-    requirements = f.read().splitlines()
-
-
 # Package configuration
+# Dependencies are now managed through pyproject.toml
 setup(name="smarttester",
       version="0.0.0",
       description="smarttester package",
       packages=find_packages(),
-      package_data={"smarttester": _get_resources("smarttester"), "tests": ["stubs/*"]},
-      install_requires=requirements)
+      package_data={"smarttester": _get_resources("smarttester"), "tests": ["stubs/*"]})
