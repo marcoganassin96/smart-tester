@@ -22,6 +22,28 @@ In this project 2 additional steps are structured:
 - Saved intermediate steps in persistent files to review step outputs and restart computation from an intermediate step 
 
 ### How to use:
+
+#### Setup with uv (Recommended)
+1. Clone/fork the project
+2. Install [uv](https://docs.astral.sh/uv/getting-started/installation/) package manager:
+   ```bash
+   curl -LsSf https://astral.sh/uv/install.sh | sh
+   ```
+3. Create and activate virtual environment with dependencies:
+   ```bash
+   cd smart-tester
+   uv sync
+   ```
+4. Set the environment variable "OPENAI_API_KEY":
+   ```bash
+   export OPENAI_API_KEY="your-api-key-here"
+   ```
+5. Run the example:
+   ```bash
+   uv run python src/python/smart-tester/smarttester/scripts/gtp35_python_smart_testing_example_runner.py
+   ```
+
+#### Alternative Setup (Legacy)
 1. Clone/fork the project
 2. Open the project using your favorite SDK (PyCharm, Visual Studio Code, ...)
 3. Set the environment variable "OPENAI_API_KEY" to link your OpenAI API Key (https://platform.openai.com/account/api-keys)  
@@ -30,6 +52,28 @@ In this project 2 additional steps are structured:
 5. If parameter "_print_text_" is set as _True_, results are printed in the terminal:
 ![alt text](https://github.com/marcoganassin96/smart-tester/blob/update/readme/assets/example_generated_code_in_terminal.png)
 6. If parameter "_save_text_" is set as _True_, results and intermediate steps are saved as files in __smarttester\package\smarttester\resources\data\saved_files_
+
+### Development Setup
+
+For contributors and developers:
+
+```bash
+# Clone the repository
+git clone https://github.com/marcoganassin96/smart-tester.git
+cd smart-tester
+
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install all dependencies including dev/test dependencies
+uv sync --all-extras
+
+# Run tests
+uv run pytest
+
+# Install in editable mode for development
+uv pip install -e .
+```
 
 ### In-progress functionalities:
 - Automated post-processing to fix usual LLM's specific errors in generating pytest tests
