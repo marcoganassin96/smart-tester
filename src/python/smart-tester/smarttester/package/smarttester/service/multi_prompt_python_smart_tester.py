@@ -117,20 +117,7 @@ def explain_tests_from_function(
     if print_text:
         print_messages(explain_messages)
 
-    explanation_response = openai.ChatCompletion.create(
-        model=explain_model,
-        messages=explain_messages,
-        temperature=temperature,
-        stream=True,
-    )
-    explanation = ""
-    for chunk in explanation_response:
-        delta = chunk["choices"][0]["delta"]
-        if print_text:
-            print_message_delta(delta)
-        if "content" in delta:
-            explanation += delta["content"]
-
+    explanation = _call_openai_streaming(explain_messages, explain_model, temperature, print_text)
     multi_prompt_data.init_explain_output(explanation)
 
     return explanation
@@ -148,20 +135,8 @@ def plan_tests_from_explain(
 
     if print_text:
         print_messages([plan_user_message])
-    plan_response = openai.ChatCompletion.create(
-        model=plan_model,
-        messages=plan_messages,
-        temperature=temperature,
-        stream=True,
-    )
-    plan = ""
-    for chunk in plan_response:
-        delta = chunk["choices"][0]["delta"]
-        if print_text:
-            print_message_delta(delta)
-        if "content" in delta:
-            plan += delta["content"]
-
+    
+    plan = _call_openai_streaming(plan_messages, plan_model, temperature, print_text)
     multi_prompt_data.init_plan_output(plan)
 
     return plan
@@ -172,7 +147,7 @@ def increase_plan_tests(
         print_text: bool = False,  # optionally prints text; helpful for understanding the function & debugging
         plan_model: str = "gpt-3.5-turbo",  # model used to generate text plans in steps 2 and 2b
         temperature: float = 0.4,  # temperature = 0 can sometimes get stuck in repetitive loops, so we use 0.4
-) -> (str, dict[str, str], dict[str, str]):
+) -> str:
     explain_data = multi_prompt_data.get_explain_data()
     plan_data = multi_prompt_data.get_plan_data()
     elaboration_user_message = multi_prompt_data.init_elaboration_input()
@@ -188,20 +163,8 @@ def increase_plan_tests(
 
     if print_text:
         print_messages([elaboration_user_message])
-    elaboration_response = openai.ChatCompletion.create(
-        model=plan_model,
-        messages=elaboration_messages,
-        temperature=temperature,
-        stream=True,
-    )
-    elaboration = ""
-    for chunk in elaboration_response:
-        delta = chunk["choices"][0]["delta"]
-        if print_text:
-            print_message_delta(delta)
-        if "content" in delta:
-            elaboration += delta["content"]
-
+    
+    elaboration = _call_openai_streaming(elaboration_messages, plan_model, temperature, print_text)
     multi_prompt_data.init_elaboration_output(elaboration)
 
     return elaboration
@@ -240,20 +203,7 @@ def generate_tests_form_plan(
     if print_text:
         print_messages([execute_system_message, execute_user_message])
 
-    execute_response = openai.ChatCompletion.create(
-        model=execute_model,
-        messages=execute_messages,
-        temperature=temperature,
-        stream=True,
-    )
-    execution = ""
-    for chunk in execute_response:
-        delta = chunk["choices"][0]["delta"]
-        if print_text:
-            print_message_delta(delta)
-        if "content" in delta:
-            execution += delta["content"]
-
+    execution = _call_openai_streaming(execute_messages, execute_model, temperature, print_text)
     multi_prompt_data.init_execution_output(execution)
     # return the unit test as a string
     return execution
