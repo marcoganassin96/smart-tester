@@ -45,7 +45,7 @@ class MultiPromptData:
     
     # Explain data
 
-    def init_explain_input(self, function_to_test: str) -> tuple[dict[str, str], : dict[str, str]]:
+    def init_explain_input(self, function_to_test: str) -> tuple[dict[str, str], dict[str, str]]:
         # create a markdown-formatted message that asks GPT to explain the function, formatted as a bullet list
         self.explain_data.explain_system_message: dict[str, str] = {
             "role": "system",
