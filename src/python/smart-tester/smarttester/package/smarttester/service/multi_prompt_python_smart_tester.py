@@ -3,6 +3,7 @@ import ast  # used for detecting whether generated Python code is valid
 import json
 import os
 import time
+from typing import List, Dict, Any
 
 import openai  # used for calling the OpenAI API
 
@@ -22,6 +23,83 @@ from smarttester.utils.text_utils import _get_bullets_number
 from smarttester.utils.save_text import save_text_in_saved_files_dir
 
 
+def _call_openai_streaming(
+    messages: List[Dict[str, Any]], 
+    model: str, 
+    temperature: float, 
+    print_text: bool = False
+) -> str:
+    """
+    Centralized function to handle OpenAI API calls with streaming response processing.
+    
+    Args:
+        messages: List of message dictionaries for the API call
+        model: Model name to use
+        temperature: Temperature parameter for the API call
+        print_text: Whether to print the response as it streams
+        
+    Returns:
+        Complete response text as string
+    """
+    response = openai.ChatCompletion.create(
+        model=model,
+        messages=messages,
+        temperature=temperature,
+        stream=True,
+    )
+    
+    result = ""
+    for chunk in response:
+        delta = chunk["choices"][0]["delta"]
+        if print_text:
+            print_message_delta(delta)
+        if "content" in delta:
+            result += delta["content"]
+    
+    return result
+
+
+def _save_text_if_needed(save_text: bool, filename: str, save_dir: str, content: str, ext: str = "txt") -> None:
+    """
+    Centralized function to conditionally save text to files.
+    
+    Args:
+        save_text: Whether to save the text
+        filename: Name of the file (without extension)
+        save_dir: Directory to save in
+        content: Content to save
+        ext: File extension (default: "txt")
+    """
+    if save_text:
+        save_text_in_saved_files_dir(filename, save_dir, content, ext)
+
+
+def _load_data_for_step(multi_prompt_data: MultiPromptData, continue_from_step: int, current_step: int, save_dir: str) -> None:
+    """
+    Centralized function to load data from saved files based on the step being continued from.
+    
+    Args:
+        multi_prompt_data: The data structure to load into
+        continue_from_step: The step we're continuing from
+        current_step: The current step being executed
+        save_dir: Directory to load from
+    """
+    if continue_from_step == current_step:
+        if current_step == 1:
+            multi_prompt_data.load_function_data(save_dir)
+            multi_prompt_data.load_multi_step_data(save_dir)
+        elif current_step == 2:
+            multi_prompt_data.load_explain_data(save_dir)
+        elif current_step == 3:
+            multi_prompt_data.load_plan_data(save_dir)
+        elif current_step == 4:
+            multi_prompt_data.load_elaboration_data(save_dir)
+        elif current_step == 5:
+            multi_prompt_data.load_execution_data(save_dir)
+        elif current_step == 6:
+            multi_prompt_data.load_post_processing_data(save_dir)
+
+
 def explain_tests_from_function(
         multi_prompt_data: MultiPromptData,  # input and output data structure
         print_text: bool = False,  # optionally prints text; helpful for understanding the function & debugging
@@ -39,20 +117,7 @@ def explain_tests_from_function(
     if print_text:
         print_messages(explain_messages)
 
-    explanation_response = openai.ChatCompletion.create(
-        model=explain_model,
-        messages=explain_messages,
-        temperature=temperature,
-        stream=True,
-    )
-    explanation = ""
-    for chunk in explanation_response:
-        delta = chunk["choices"][0]["delta"]
-        if print_text:
-            print_message_delta(delta)
-        if "content" in delta:
-            explanation += delta["content"]
-
+    explanation = _call_openai_streaming(explain_messages, explain_model, temperature, print_text)
     multi_prompt_data.init_explain_output(explanation)
 
     return explanation
@@ -70,20 +135,8 @@ def plan_tests_from_explain(
 
     if print_text:
         print_messages([plan_user_message])
-    plan_response = openai.ChatCompletion.create(
-        model=plan_model,
-        messages=plan_messages,
-        temperature=temperature,
-        stream=True,
-    )
-    plan = ""
-    for chunk in plan_response:
-        delta = chunk["choices"][0]["delta"]
-        if print_text:
-            print_message_delta(delta)
-        if "content" in delta:
-            plan += delta["content"]
-
+    
+    plan = _call_openai_streaming(plan_messages, plan_model, temperature, print_text)
     multi_prompt_data.init_plan_output(plan)
 
     return plan
@@ -94,7 +147,7 @@ def increase_plan_tests(
         print_text: bool = False,  # optionally prints text; helpful for understanding the function & debugging
         plan_model: str = "gpt-3.5-turbo",  # model used to generate text plans in steps 2 and 2b
         temperature: float = 0.4,  # temperature = 0 can sometimes get stuck in repetitive loops, so we use 0.4
-) -> (str, dict[str, str], dict[str, str]):
+) -> str:
     explain_data = multi_prompt_data.get_explain_data()
     plan_data = multi_prompt_data.get_plan_data()
     elaboration_user_message = multi_prompt_data.init_elaboration_input()
@@ -110,20 +163,8 @@ def increase_plan_tests(
 
     if print_text:
         print_messages([elaboration_user_message])
-    elaboration_response = openai.ChatCompletion.create(
-        model=plan_model,
-        messages=elaboration_messages,
-        temperature=temperature,
-        stream=True,
-    )
-    elaboration = ""
-    for chunk in elaboration_response:
-        delta = chunk["choices"][0]["delta"]
-        if print_text:
-            print_message_delta(delta)
-        if "content" in delta:
-            elaboration += delta["content"]
-
+    
+    elaboration = _call_openai_streaming(elaboration_messages, plan_model, temperature, print_text)
     multi_prompt_data.init_elaboration_output(elaboration)
 
     return elaboration
@@ -162,20 +203,7 @@ def generate_tests_form_plan(
     if print_text:
         print_messages([execute_system_message, execute_user_message])
 
-    execute_response = openai.ChatCompletion.create(
-        model=execute_model,
-        messages=execute_messages,
-        temperature=temperature,
-        stream=True,
-    )
-    execution = ""
-    for chunk in execute_response:
-        delta = chunk["choices"][0]["delta"]
-        if print_text:
-            print_message_delta(delta)
-        if "content" in delta:
-            execution += delta["content"]
-
+    execution = _call_openai_streaming(execute_messages, execute_model, temperature, print_text)
     multi_prompt_data.init_execution_output(execution)
     # return the unit test as a string
     return execution
@@ -263,78 +291,50 @@ def unit_tests_from_function(
 
     if continue_from_step <= 1:
         # Step 1: Generate an explanation of the function
-
-        if continue_from_step == 1:
-            # if we are continuing from step 1, we need to load the data from the saved files
-            multi_prompt_data.load_function_data(save_dir)
-            multi_prompt_data.load_multi_step_data(save_dir)
+        _load_data_for_step(multi_prompt_data, continue_from_step, 1, save_dir)
 
         explanation = explain_tests_from_function(multi_prompt_data, print_text, explain_model, temperature)
-
-        if save_text:
-            save_text_in_saved_files_dir("explain", save_dir, explanation)
+        _save_text_if_needed(save_text, "explain", save_dir, explanation)
 
     if continue_from_step <= 2:
         # Step 2: Generate a plan to write a unit test
-
-        if continue_from_step == 2:
-            # if we are continuing from step 2, we need to load the data from the saved files
-            multi_prompt_data.load_explain_data(save_dir)
+        _load_data_for_step(multi_prompt_data, continue_from_step, 2, save_dir)
             
         plan: str = plan_tests_from_explain(multi_prompt_data, print_text, plan_model, temperature)
-
-        if save_text:
-            save_text_in_saved_files_dir("plan", save_dir, plan)
+        _save_text_if_needed(save_text, "plan", save_dir, plan)
 
     if continue_from_step <= 3:
         # Step 2b: If the plan is short, ask GPT to elaborate further
-
-        if continue_from_step == 3:
-            multi_prompt_data.load_plan_data(save_dir)
+        _load_data_for_step(multi_prompt_data, continue_from_step, 3, save_dir)
 
         # this counts top-level bullets (e.g., categories), but not sub-bullets (e.g., test cases)
-
         plan = multi_prompt_data.get_plan_data().plan
         num_bullets = _get_bullets_number(plan)
         elaboration_needed = num_bullets < approx_min_cases_to_cover
 
         if elaboration_needed:
             elaboration = increase_plan_tests(multi_prompt_data, print_text, plan_model, temperature)
-
-            if save_text:
-                save_text_in_saved_files_dir("elaboration", save_dir, elaboration)
+            _save_text_if_needed(save_text, "elaboration", save_dir, elaboration)
 
     if continue_from_step <= 4:
-
         # Step 3: Generate the unit test
-
-        if continue_from_step == 4:
-            multi_prompt_data.load_elaboration_data(save_dir)
+        _load_data_for_step(multi_prompt_data, continue_from_step, 4, save_dir)
 
         execution = generate_tests_form_plan(multi_prompt_data, print_text,
                                              execute_model, temperature)
-
-        if save_text:
-            save_text_in_saved_files_dir("execution", save_dir, execution)
+        _save_text_if_needed(save_text, "execution", save_dir, execution)
 
     if continue_from_step <= 5:
         # Custom post-processing to fix errors
-
-        if continue_from_step == 5:
-            multi_prompt_data.load_execution_data(save_dir)
+        _load_data_for_step(multi_prompt_data, continue_from_step, 5, save_dir)
 
         code = post_process_execution_response(multi_prompt_data)
-
         multi_prompt_data.init_post_processing_output(code)
-
-        if save_text:
-            save_text_in_saved_files_dir("code", save_dir, code, "py")
+        _save_text_if_needed(save_text, "code", save_dir, code, "py")
 
     if continue_from_step <= 6:
         # retry if fails
-
-        if continue_from_step == 6:
-            multi_prompt_data.load_post_processing_data(save_dir)
+        _load_data_for_step(multi_prompt_data, continue_from_step, 6, save_dir)
         try:
             post_processing_data = multi_prompt_data.get_post_processing_data()
             ast.parse(post_processing_data.code)
