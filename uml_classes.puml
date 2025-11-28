@@ -1,0 +1,141 @@
+@startuml
+title Smart Tester - Classes and Functions UML
+
+package "dataclass" {
+  class FunctionData {
+    - function: str
+    - function_name: str = "Unknown"
+    - programming_language: str = "python"
+    - unit_test_package: str = "pytest"
+  }
+
+  class MultiStepData {
+    - explain_model: str = "gpt-3.5-turbo"
+    - plan_model: str = "gpt-3.5-turbo"
+    - execute_model: str = "gpt-3.5-turbo"
+    + to_dict(): dict
+    + to_json(): str
+  }
+
+  class ExplainData {
+    - explanation: str
+    - explain_system_message: dict
+    - explain_user_message: dict
+    - explain_assistant_message: dict
+  }
+
+  class PlanData {
+    - plan: str
+    - plan_user_message: dict
+    - plan_assistant_message: dict
+  }
+
+  class ElaborationData {
+    - elaboration: str
+    - elaboration_needed: bool
+    - elaboration_user_message: dict
+    - elaboration_assistant_message: dict
+  }
+
+  class ExecutionData {
+    - execution: str
+    - execute_system_message: dict
+    - execute_user_message: dict
+  }
+
+  class PostProcessingData {
+    - code: str
+  }
+}
+
+package "service" {
+  class MultiPromptData {
+    - multi_step_data: MultiStepData
+    - function_data: FunctionData
+    - explain_data: ExplainData
+    - plan_data: PlanData
+    - elaboration_data: ElaborationData
+    - execution_data: ExecutionData
+    - post_processing_data: PostProcessingData
+    + init_multi_step_data_input(explain_model, plan_model, execute_model)
+    + get_multi_step_data(): MultiStepData
+    + init_function_input(function_to_test, function_name, programming_language, unit_test_package)
+    + get_function_data(): FunctionData
+    + init_explain_input(function_to_test): (dict, dict)
+    + init_explain_output(explanation): dict
+    + get_explain_data(): ExplainData
+    + init_plan_input(): (dict, list)
+    + init_plan_output(plan): dict
+    + get_plan_data(): PlanData
+    + init_elaboration_input(): dict
+    + init_elaboration_output(elaboration): dict
+    + get_elaboration_data(): ElaborationData
+    + init_execution_input(): (dict, dict)
+    + init_execution_output(execution): None
+    + get_execution_data(): ExecutionData
+    + init_post_processing_output(code): None
+    + get_post_processing_data(): PostProcessingData
+    + load_multi_step_data(saved_dir): MultiStepData
+    + load_function_data(saved_dir): FunctionData
+    + load_explain_data(saved_dir): ExplainData
+    + load_plan_data(saved_dir): PlanData
+    + load_elaboration_data(saved_dir): ElaborationData
+    + load_execution_data(saved_dir): ExecutionData
+    + load_post_processing_data(saved_dir): PostProcessingData
+  }
+
+  class MultiPromptPythonSmartTester << (M,#FF7700) >> {
+    + _call_openai_streaming(messages, model, temperature, print_text): str
+    + _save_text_if_needed(save_text, filename, save_dir, content, ext="txt"): None
+    + _load_data_for_step(multi_prompt_data, continue_from_step, current_step, save_dir): None
+    + explain_tests_from_function(multi_prompt_data, print_text=False, explain_model="gpt-3.5-turbo", temperature=0.4): str
+    + plan_tests_from_explain(multi_prompt_data, print_text=False, plan_model="gpt-3.5-turbo", temperature=0.4): str
+    + increase_plan_tests(multi_prompt_data, print_text=False, plan_model="gpt-3.5-turbo", temperature=0.4): str
+    + generate_tests_form_plan(multi_prompt_data, print_text=False, execute_model="gpt-3.5-turbo", temperature=0.4): str
+    + post_process_execution_response(multi_prompt_data, execute_model="gpt-3.5-turbo"): str
+    + unit_tests_from_function(function_to_test, programming_language="python", unit_test_package="pytest", approx_min_cases_to_cover=7, print_text=False, save_text=True, explain_model="gpt-3.5-turbo", plan_model="gpt-3.5-turbo", execute_model="gpt-3.5-turbo", temperature=0.4, reruns_if_fail=1, continue_from_step=0, source_data_dir=None): str
+  }
+}
+
+package "utils" {
+  class save_text {
+    + save_text_in_saved_files_dir(file_name, save_dir, text, ext="txt"): None
+    + load_file_from_saved_files_dir(saved_dir, file_name, ext="txt"): str
+  }
+
+  class messages_printer {
+    + print_messages(messages): None
+    + print_message_delta(delta): None
+  }
+
+  class text_utils {
+    + _get_bullets_number(text): int
+  }
+}
+
+package "root" {
+  class smarttester.__init__ {
+    + ROOT: Path
+    + PATH_resources: Path
+    + PATH_data: Path
+    + PATH_saved_files: Path
+  }
+}
+
+'MultiPromptData' *-- 'FunctionData'
+'MultiPromptData' *-- 'MultiStepData'
+'MultiPromptData' *-- 'ExplainData'
+'MultiPromptData' *-- 'PlanData'
+'MultiPromptData' *-- 'ElaborationData'
+'MultiPromptData' *-- 'ExecutionData'
+'MultiPromptData' *-- 'PostProcessingData'
+
+MultiPromptPythonSmartTester ..> MultiPromptData : uses
+MultiPromptPythonSmartTester ..> openai : calls
+MultiPromptPythonSmartTester ..> save_text : uses
+MultiPromptPythonSmartTester ..> messages_printer : prints
+MultiPromptPythonSmartTester ..> text_utils : util
+
+save_text ..> smarttester.__init__ : reads PATH_saved_files
+
+@enduml

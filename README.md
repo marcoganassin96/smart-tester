@@ -61,6 +61,37 @@ uv sync
 
 
 ### In-progress functionalities:
+- UML: A PlantUML class diagram (uml_classes.puml) has been added at the repository root. See the "UML diagram" section below for details.
+
+### UML diagram
+A PlantUML source file named `uml_classes.puml` lives at the root of this repository. It documents the project's dataclasses, service classes, and utility modules (including public methods). The diagram was auto-generated to match the current code structure.
+
+How to render the PlantUML diagram:
+
+1. Quick online rendering:
+   - Visit https://www.plantuml.com/plantuml/ and paste the contents of `uml_classes.puml` into the editor.
+
+2. Local rendering with plantuml.jar:
+   - Install Graphviz and Java if not already available.
+   - Run: `java -jar plantuml.jar uml_classes.puml` from the repository root. This will produce `uml_classes.png`.
+
+3. Using Docker:
+   - `docker run --rm -v $(pwd):/workspace plantuml/plantuml -tpng /workspace/uml_classes.puml`
+
+4. Visual Studio Code:
+   - Install the "PlantUML" extension and open the file. Use the preview feature to render the diagram.
+
+Notes:
+- The `.puml` file is plain text and human-readable, but visual rendering helps to navigate relationships.
+- A rendered PNG of the diagram is included at `uml_classes.png` for quick viewing on GitHub and locally.
+
+Embedded diagram (rendered):
+
+![UML diagram](./uml_classes.png)
+
+If you prefer an SVG or different format, I can also generate that and commit it.
+
+### In-progress functionalities:
 - Automated post-processing to fix usual LLM's specific errors in generating pytest tests
 - Exposition of API to call pytest test generation services from a client
 
