@@ -82,7 +82,14 @@ How to render the PlantUML diagram:
    - Install the "PlantUML" extension and open the file. Use the preview feature to render the diagram.
 
 Notes:
-- The `.puml` file is plain text and human-readable, but visual rendering helps to navigate relationships. If you want, I can also render a PNG and add it to the repo.
+- The `.puml` file is plain text and human-readable, but visual rendering helps to navigate relationships.
+- A rendered PNG of the diagram is included at `uml_classes.png` for quick viewing on GitHub and locally.
+
+Embedded diagram (rendered):
+
+![UML diagram](./uml_classes.png)
+
+If you prefer an SVG or different format, I can also generate that and commit it.
 
 ### In-progress functionalities:
 - Automated post-processing to fix usual LLM's specific errors in generating pytest tests
